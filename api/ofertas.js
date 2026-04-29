@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 1. Aquí va tu URL completa
-const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co/rest/v1/'; 
+const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
 
 // 2. Aquí va tu SECRET KEY (sb_secret_...)
 const supabaseKey = 'sb_secret_aEuXlbpFGJCrk0BK2QXQxQ_b5dIJ4gr'; 
