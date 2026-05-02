@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
     // --- REGLAS DE NEGOCIO PREVIAS A LA TRANSACCIÓN ---
 
-    // Regla 1: Validar que la oferta exista y esté 'Activa'
+    // Regla 1: Validar que la oferta exista y esté 'Activo'
     const { data: oferta, error: errorOferta } = await supabase
       .from('ofertas')
       .select('estado')
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "La oferta laboral no existe en la base de datos." });
     }
     
-    if (oferta.estado !== 'Activa') {
+    if (oferta.estado !== 'Activo') {
       return res.status(400).json({ 
         error: "Regla fallida: No se pueden recibir postulaciones. La oferta se encuentra en estado: " + oferta.estado 
       });
