@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante';
+import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante.js';
 
 const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
 

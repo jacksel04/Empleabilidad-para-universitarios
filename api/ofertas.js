@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta } from '../models/oferta';
+import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta } from '../models/oferta.js';
 
 // 1. Aquí va tu URL completa
 const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 

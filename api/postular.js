@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { obtenerEstadoOferta, verificarPostulacionExistente, insertarPostulacion, actualizarEstadoOferta } from '../models/postulacion';
+import { obtenerEstadoOferta, verificarPostulacionExistente, insertarPostulacion, actualizarEstadoOferta } from '../models/postulacion.js';
 
 // 1. Aquí va tu URL completa
 const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
@@ -12,7 +12,14 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { estudiante_id, oferta_id } = req.body;
+    try {
+      let body = req.body;
+
+      if (typeof body === "string") {
+        body = JSON.parse(body);
+      }
+
+      const { estudiante_id, oferta_id } = body || {};
 
     if (!estudiante_id || !oferta_id) {
       return res.status(400).json({ error: "Faltan identificadores: Se requiere estudiante_id y oferta_id." });
@@ -40,11 +47,19 @@ export default async function handler(req, res) {
     if (errorPost) return res.status(500).json({ error: "Error en transacción (Paso A): " + errorPost.message });
 
     // Paso B
-    const { error: errorUpdate } = await actualizarEstadoOferta(supabase, oferta_id, 'En proceso de selección');
-    if (errorUpdate) return res.status(500).json({ error: "Error en transacción (Paso B): " + errorUpdate.message });
+          const { error: errorUpdate } = await actualizarEstadoOferta(supabase, oferta_id, 'En proceso de selección');
+          if (errorUpdate) {
+            return res.status(500).json({ error: "Error en transacción (Paso B): " + errorUpdate.message });
+          }
 
-    return res.status(201).json({ mensaje: "Transacción completada: Postulación registrada y oferta actualizada a 'En proceso de selección'" });
-  }
-  
-  res.status(405).json({ mensaje: 'Método no permitido' });
+          return res.status(201).json({ 
+            mensaje: "Transacción completada: Postulación registrada y oferta actualizada a 'En proceso de selección'" 
+          });
+
+        } catch (error) {
+          return res.status(500).json({ error: "Error interno: " + error.message });
+        }
+      }
+
+      return res.status(405).json({ mensaje: 'Método no permitido' });
 }
