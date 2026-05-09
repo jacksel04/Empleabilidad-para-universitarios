@@ -1,11 +1,8 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { contarPostulaciones, contarEstudiantes, contarOfertasActivas } from '../models/estadistica';
 
-const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
-
-const supabaseKey = 'sb_secret_aEuXlbpFGJCrk0BK2QXQxQ_b5dIJ4gr';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './supabaseClient.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {

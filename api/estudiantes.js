@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-
 import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante';
+import { supabase } from './supabaseClient.js';
 
-const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
-
-const supabaseKey = 'sb_secret_aEuXlbpFGJCrk0BK2QXQxQ_b5dIJ4gr';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {

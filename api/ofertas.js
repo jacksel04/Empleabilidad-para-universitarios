@@ -1,13 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta } from '../models/oferta';
 
-// 1. Aquí va tu URL completa
-const supabaseUrl = 'https://bbjawyjwjhzlvjtmcudp.supabase.co'; 
+import { supabase } from './supabaseClient.js';
 
-// 2. Aquí va tu SECRET KEY (sb_secret_...)
-const supabaseKey = 'sb_secret_aEuXlbpFGJCrk0BK2QXQxQ_b5dIJ4gr'; 
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
