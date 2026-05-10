@@ -51,8 +51,9 @@ form.addEventListener("submit", async (event) => {
 
     const estudiantes = await response.json();
 
+    // Lógica actualizada: Valida correo Y contraseña
     const estudiante = estudiantes.find(
-      (item) => item.correo && item.correo.toLowerCase() === correo.toLowerCase()
+      (item) => item.correo?.toLowerCase() === correo.toLowerCase() && item.password === password
     );
 
     if (!estudiante) {
