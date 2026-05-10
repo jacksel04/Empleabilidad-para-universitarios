@@ -2,13 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante.js';
 import { supabase } from './supabaseClient.js';
 
-
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { nombre, correo, telefono, carrera, ciclo } = req.body;
+    const { nombre, correo, telefono, carrera, ciclo, password } = req.body;
 
     if (!correo || !correo.endsWith('@unmsm.edu.pe')) {
       return res.status(400).json({ error: "Verificación fallida: Solo se permite el registro con correo institucional (@unmsm.edu.pe)." });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: "Dato inválido: La contraseña es obligatoria y debe tener al menos 6 caracteres." });
     }
 
     const telefonoRegex = /^[0-9]{9}$/;
@@ -22,7 +25,7 @@ export default async function handler(req, res) {
 
     // Llamada al Modelo
     const { data, error } = await registrarEstudiante(supabase, { 
-      nombre, correo, telefono, carrera, ciclo, perfil_verificado: true 
+      nombre, correo, telefono, carrera, ciclo, password, perfil_verificado: true 
     });
       
     if (error) return res.status(500).json({ error: error.message });
