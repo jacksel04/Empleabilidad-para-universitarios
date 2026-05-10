@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { contarPostulaciones, contarEstudiantes, contarOfertasActivas } from '../models/estadistica';
+import { contarPostulaciones, contarEstudiantes, contarOfertasActivas } from '../models/estadistica.js';
 
 import { supabase } from './supabaseClient.js';
 

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante';
+import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from '../models/estudiante.js';
 import { supabase } from './supabaseClient.js';
 
 
