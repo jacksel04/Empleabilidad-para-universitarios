@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient.js';
 import { obtenerEstadoOferta, verificarPostulacionExistente, insertarPostulacion, actualizarEstadoOferta } from '../models/postulacion.js';
 
 export default async function handler(req, res) {
