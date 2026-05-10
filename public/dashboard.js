@@ -1,5 +1,4 @@
 const datosUsuario = document.getElementById("datosUsuario");
-const sidebarNombre = document.getElementById("sidebarNombre");
 const ofertasContenedor = document.getElementById("ofertas");
 const mensaje = document.getElementById("mensaje");
 const cerrarSesion = document.getElementById("cerrarSesion");
@@ -15,7 +14,6 @@ if (!estudiante) {
   window.location.href = "index.html";
 } else {
   datosUsuario.textContent = `${estudiante.nombre} - ${estudiante.correo}`;
-  sidebarNombre.textContent = estudiante.nombre;
   cargarOfertas();
   cargarEstadisticas();
 }
@@ -39,7 +37,7 @@ async function cargarOfertas() {
 
     if (ofertas.length === 0) {
       ofertasContenedor.innerHTML = `
-        <div class="admin-empty">
+        <div class="empty-state">
           <p>No hay ofertas registradas por el momento.</p>
         </div>
       `;
@@ -48,7 +46,7 @@ async function cargarOfertas() {
 
     ofertas.forEach((oferta) => {
       const card = document.createElement("div");
-      card.className = "admin-offer-card";
+      card.className = "offer-card";
 
       const estaActiva = oferta.estado === "Activo";
 
@@ -60,13 +58,15 @@ async function cargarOfertas() {
           </span>
         </div>
 
-        <p><strong>Empresa:</strong> ${oferta.empresa_nombre}</p>
-        <p><strong>Descripción:</strong> ${oferta.descripcion}</p>
-        <p><strong>Modalidad:</strong> ${oferta.modalidad}</p>
-        <p><strong>Salario:</strong> ${oferta.salario || "No especificado"}</p>
+        <div class="offer-body">
+          <p><strong>Empresa:</strong> ${oferta.empresa_nombre}</p>
+          <p><strong>Descripción:</strong> ${oferta.descripcion}</p>
+          <p><strong>Modalidad:</strong> ${oferta.modalidad}</p>
+          <p><strong>Salario:</strong> ${oferta.salario || "No especificado"}</p>
+        </div>
 
         <button 
-          class="admin-action-button"
+          class="offer-button"
           type="button"
           ${!estaActiva ? "disabled" : ""}
           onclick="postular(${oferta.id})"

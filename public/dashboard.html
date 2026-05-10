@@ -8,107 +8,72 @@
 
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="admin-body">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-icon">U</div>
-      <span>UNMSM Jobs</span>
-    </div>
 
-    <div class="sidebar-user">
-      <div class="user-avatar">👤</div>
+<body class="dashboard-body">
+  <header class="dashboard-header">
+    <div class="dashboard-brand">
+      <img 
+        src="logo-unmsm-blanco.png" 
+        alt="Escudo UNMSM" 
+        class="dashboard-logo-img"
+        />
+
       <div>
-        <strong id="sidebarNombre">Usuario</strong>
-        <p>Estudiante / Egresado</p>
-      </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <a href="#" class="active">🏠 Dashboard</a>
-      <a href="#">💼 Ofertas</a>
-      <a href="#">📝 Postulaciones</a>
-      <a href="#">👤 Perfil</a>
-      <a href="#">⚙️ Configuración</a>
-    </nav>
-  </aside>
-
-  <section class="admin-layout">
-    <header class="topbar">
-      <div class="topbar-title">
-        <h1>Dashboard</h1>
+        <h1>Plataforma de Empleabilidad UNMSM</h1>
         <p id="datosUsuario">Cargando usuario...</p>
       </div>
+    </div>
 
-      <div class="topbar-actions">
-        <input type="text" placeholder="Buscar ofertas..." />
-        <button id="cerrarSesion" class="topbar-button">Cerrar sesión</button>
+    <button id="cerrarSesion" class="logout-button" type="button">
+      Cerrar sesión
+    </button>
+  </header>
+
+  <main class="dashboard-main">
+    <section class="welcome-panel">
+      <div>
+        <span class="welcome-label">Panel principal</span>
+        <h2>Oportunidades laborales</h2>
+        <p>
+          Consulta ofertas registradas en la plataforma y postula a aquellas que se encuentren activas.
+        </p>
       </div>
-    </header>
+    </section>
 
-    <main class="admin-main">
-      <section class="summary-grid">
-        <article class="summary-card green">
-          <div class="summary-icon">💼</div>
-          <div>
-            <p>Total de ofertas</p>
-            <h2 id="totalOfertas">0</h2>
-          </div>
-        </article>
+    <section class="dashboard-stats">
+      <article class="stat-card stat-primary">
+        <span>Total de ofertas</span>
+        <strong id="totalOfertas">0</strong>
+      </article>
 
-        <article class="summary-card blue">
-          <div class="summary-icon">✅</div>
-          <div>
-            <p>Ofertas activas</p>
-            <h2 id="ofertasActivas">0</h2>
-          </div>
-        </article>
+      <article class="stat-card stat-accent">
+        <span>Ofertas activas</span>
+        <strong id="ofertasActivas">0</strong>
+      </article>
 
-        <article class="summary-card dark">
-          <div class="summary-icon">📝</div>
-          <div>
-            <p>Postulaciones</p>
-            <h2 id="totalPostulaciones">0</h2>
-          </div>
-        </article>
-      </section>
+      <article class="stat-card stat-dark">
+        <span>Postulaciones</span>
+        <strong id="totalPostulaciones">0</strong>
+      </article>
+    </section>
 
-      <section class="alert-box">
-        <strong>Panel de oportunidades:</strong>
-        revisa las ofertas disponibles y postula a las que se encuentren activas.
-      </section>
+    <section class="offers-panel">
+      <div class="offers-header">
+        <div>
+          <h3>Ofertas laborales disponibles</h3>
+          <p>Revisa las oportunidades disponibles para estudiantes y egresados.</p>
+        </div>
 
-      <section class="content-grid">
-        <article class="main-panel">
-          <div class="panel-header">
-            <h2>Ofertas laborales disponibles</h2>
-            <span id="contadorOfertas">Cargando...</span>
-          </div>
+        <span id="contadorOfertas" class="offers-counter">Cargando...</span>
+      </div>
 
-          <div id="ofertas" class="admin-offers-grid"></div>
+      <div id="ofertas" class="admin-offers-grid"></div>
 
-          <p id="mensaje" class="dashboard-message"></p>
-        </article>
+      <p id="mensaje" class="dashboard-message"></p>
+    </section>
+  </main>
 
-        <article class="side-panel">
-          <h2>Estado del perfil</h2>
-
-          <div class="profile-status">
-            <div class="status-circle">✓</div>
-            <div>
-              <strong>Perfil registrado</strong>
-              <p>Tu cuenta se encuentra vinculada a la plataforma.</p>
-            </div>
-          </div>
-
-          <div class="mini-list">
-            <p>✔ Consulta de ofertas</p>
-            <p>✔ Postulación a oportunidades</p>
-            <p>✔ Seguimiento de estado</p>
-          </div>
-        </article>
-      </section>
-    </main>
-  </section>
+  <span id="sidebarNombre" hidden></span>
 
   <script src="dashboard.js"></script>
 </body>
