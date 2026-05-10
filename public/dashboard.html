@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Dashboard | Plataforma de Empleabilidad UNMSM</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-body">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">U</div>
+      <span>UNMSM Jobs</span>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">👤</div>
+      <div>
+        <strong id="sidebarNombre">Usuario</strong>
+        <p>Estudiante / Egresado</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="active">🏠 Dashboard</a>
+      <a href="#">💼 Ofertas</a>
+      <a href="#">📝 Postulaciones</a>
+      <a href="#">👤 Perfil</a>
+      <a href="#">⚙️ Configuración</a>
+    </nav>
+  </aside>
+
+  <section class="admin-layout">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Dashboard</h1>
+        <p id="datosUsuario">Cargando usuario...</p>
+      </div>
+
+      <div class="topbar-actions">
+        <input type="text" placeholder="Buscar ofertas..." />
+        <button id="cerrarSesion" class="topbar-button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="summary-grid">
+        <article class="summary-card green">
+          <div class="summary-icon">💼</div>
+          <div>
+            <p>Total de ofertas</p>
+            <h2 id="totalOfertas">0</h2>
+          </div>
+        </article>
+
+        <article class="summary-card blue">
+          <div class="summary-icon">✅</div>
+          <div>
+            <p>Ofertas activas</p>
+            <h2 id="ofertasActivas">0</h2>
+          </div>
+        </article>
+
+        <article class="summary-card dark">
+          <div class="summary-icon">📝</div>
+          <div>
+            <p>Postulaciones</p>
+            <h2 id="totalPostulaciones">0</h2>
+          </div>
+        </article>
+      </section>
+
+      <section class="alert-box">
+        <strong>Panel de oportunidades:</strong>
+        revisa las ofertas disponibles y postula a las que se encuentren activas.
+      </section>
+
+      <section class="content-grid">
+        <article class="main-panel">
+          <div class="panel-header">
+            <h2>Ofertas laborales disponibles</h2>
+            <span id="contadorOfertas">Cargando...</span>
+          </div>
+
+          <div id="ofertas" class="admin-offers-grid"></div>
+
+          <p id="mensaje" class="dashboard-message"></p>
+        </article>
+
+        <article class="side-panel">
+          <h2>Estado del perfil</h2>
+
+          <div class="profile-status">
+            <div class="status-circle">✓</div>
+            <div>
+              <strong>Perfil registrado</strong>
+              <p>Tu cuenta se encuentra vinculada a la plataforma.</p>
+            </div>
+          </div>
+
+          <div class="mini-list">
+            <p>✔ Consulta de ofertas</p>
+            <p>✔ Postulación a oportunidades</p>
+            <p>✔ Seguimiento de estado</p>
+          </div>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
