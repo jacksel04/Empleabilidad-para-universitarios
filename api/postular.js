@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { obtenerEstadoOferta, verificarPostulacionExistente, insertarPostulacion, actualizarEstadoOferta } from '../models/postulacion';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
