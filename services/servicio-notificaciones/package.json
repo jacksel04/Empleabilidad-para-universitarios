@@ -1,0 +1,10 @@
+{
+  "name": "servicio-notificaciones",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "amqplib": "^0.10.4",
+    "dotenv": "^17.4.2"
+  }
+}
