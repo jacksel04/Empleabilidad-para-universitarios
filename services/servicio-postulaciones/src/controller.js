@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 
 const app = express();
 app.use(express.json());
-const PORT = 3003;
+const PORT = process.env.PORT || 3003;
 
 app.post('/api/postular', async (req, res) => {
   try {

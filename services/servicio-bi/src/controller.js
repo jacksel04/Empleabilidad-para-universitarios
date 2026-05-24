@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 
 const app = express();
 app.use(express.json());
-const PORT = 3004;
+const PORT = process.env.PORT || 3004;
 
 app.get('/api/estadisticas', async (req, res) => {
   try {
