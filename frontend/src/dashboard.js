@@ -7,7 +7,7 @@ const totalOfertas = document.getElementById("totalOfertas");
 const ofertasActivas = document.getElementById("ofertasActivas");
 const totalPostulaciones = document.getElementById("totalPostulaciones");
 const estudiante = JSON.parse(localStorage.getItem("estudiante"));
-const API_BASE_URL = "https://api-gateway-empleabilidad.onrender.com";
+const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
 
 if (!estudiante) {
   window.location.href = "index.html";
