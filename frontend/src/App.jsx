@@ -23,7 +23,7 @@ function App() {
       setEstudiante(JSON.parse(estudianteGuardado));
     }
 
-    // 2. MAGIA: Escuchamos cuando el usuario presiona el botón "Atrás" o "Adelante" del navegador
+    // Escuchamos cuando el usuario presiona el botón "Atrás" o "Adelante" del navegador
     const manejarBotonNavegador = (evento) => {
       if (evento.state && evento.state.vista) {
         setVistaActual(evento.state.vista);
@@ -36,7 +36,7 @@ function App() {
     return () => window.removeEventListener("popstate", manejarBotonNavegador);
   }, []);
 
-  // 3. Función inteligente para cambiar de pestaña y actualizar la URL al mismo tiempo
+  // Función para cambiar de pestaña y actualizar la URL al mismo tiempo
   const navegarA = (nuevaVista) => {
     setVistaActual(nuevaVista);
     // Agrega la nueva página al historial del navegador sin recargar

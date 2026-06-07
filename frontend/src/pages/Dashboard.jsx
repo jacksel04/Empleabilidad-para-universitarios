@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 
-const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const Dashboard = ({ estudiante, alCambiarVista }) => {
   const [stats, setStats] = useState({ totalOfertas: 0, ofertasActivas: 0, totalPostulaciones: "-" });

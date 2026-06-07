@@ -4,7 +4,7 @@ import proxy from 'express-http-proxy';
 
 const app = express();
 
-// 1. MODIFICACIÓN: Cambiamos el puerto fijo por el dinámico de Render
+// Cambiamos el puerto fijo por el dinámico de Render
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());

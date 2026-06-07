@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // 1. AQUÍ AGREGAMOS { onLoginSuccess } PARA RECIBIRLO DESDE APP.JSX
 export const Login = ({ onLoginSuccess }) => {

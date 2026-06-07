@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Badge, Button, Alert } from "react-bootstrap";
 
-const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const BolsaTrabajo = ({ estudiante, alCambiarVista }) => {
   const [ofertas, setOfertas] = useState([]);
