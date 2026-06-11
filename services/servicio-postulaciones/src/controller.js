@@ -56,6 +56,31 @@ app.post('/api/postular', async (req, res) => {
   }
 });
 
+app.get('/api/postulaciones/:estudiante_id', async (req, res) => {
+  try {
+    const { estudiante_id } = req.params;
+
+    if (!estudiante_id) {
+      return res.status(400).json({ error: "Falta el identificador del estudiante." });
+    }
+
+    const { data, error } = await obtenerPostulacionesPorEstudiante(supabase, estudiante_id);
+
+    if (error) {
+      return res.status(500).json({ error: "Error al consultar base de datos: " + error.message });
+    }
+
+    return res.status(200).json(data);
+
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno: " + error.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`[Servicio Postulaciones] Escuchando en el puerto ${PORT}`);
+});
+
 app.listen(PORT, () => {
   console.log(`[Servicio Postulaciones] Escuchando en el puerto ${PORT}`);
 });

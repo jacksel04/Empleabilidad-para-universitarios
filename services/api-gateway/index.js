@@ -20,7 +20,11 @@ app.use('/api/usuarios', proxy('https://servicio-usuarios-empleabilidad.onrender
 
 app.use('/api/ofertas', proxy('https://servicio-ofertas-empleabilidad.onrender.com', proxyOptions));
 
+// --- MICROSERVICIO DE POSTULACIONES ---
 app.use('/api/postular', proxy('https://servicio-postulaciones-empleabilidad.onrender.com', proxyOptions));
+// ¡ESTA ES LA LÍNEA NUEVA QUE DEBES AGREGAR!
+app.use('/api/postulaciones', proxy('https://servicio-postulaciones-empleabilidad.onrender.com', proxyOptions)); 
+// --------------------------------------
 
 app.use('/api/estadisticas', proxy('https://servicio-bi-empleabilidad.onrender.com', proxyOptions));
 
