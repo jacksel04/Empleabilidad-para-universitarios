@@ -1,11 +1,14 @@
 import express from 'express';
 import 'dotenv/config';
+import multer from 'multer';
 import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from './model.js';
 import { supabase } from './supabase.js';
 
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3001;
+// NUEVO: Configuración de multer para guardar el archivo en la memoria temporalmente (límite 5MB)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 app.post('/api/estudiantes', async (req, res) => {
   const { nombre, correo, telefono, carrera, ciclo, password } = req.body;
@@ -41,12 +44,29 @@ app.get('/api/estudiantes', async (req, res) => {
   return res.status(200).json(data);
 });
 
-app.put('/api/estudiantes', async (req, res) => {
-  const { id, telefono, ciclo } = req.body; 
-  const { data, error } = await actualizarEstudiante(supabase, id, { telefono, ciclo });
-    
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ mensaje: "Perfil de estudiante actualizado", data });
+// ACTUALIZADO: Endpoint para actualizar datos y recibir el archivo 'cv'
+app.put('/api/estudiantes', upload.single('cv'), async (req, res) => {
+  try {
+    // Cuando usamos FormData, los datos de texto vienen en req.body
+    const { id, telefono, ciclo } = req.body; 
+    let datosActualizar = { telefono, ciclo };
+
+    // Si el frontend envió un archivo PDF, lo subimos a Supabase Storage
+    if (req.file) {
+      const fileName = `estudiante_${id}_cv.pdf`;
+      const cvUrl = await subirCVSupabase(supabase, req.file.buffer, fileName);
+      // Agregamos la URL a los datos que vamos a guardar en la base de datos
+      datosActualizar.cv_url = cvUrl; 
+    }
+
+    const { data, error } = await actualizarEstudiante(supabase, id, datosActualizar);
+      
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ mensaje: "Perfil y CV actualizados correctamente", data });
+
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno del servidor: " + error.message });
+  }
 });
 
 app.delete('/api/estudiantes', async (req, res) => {
