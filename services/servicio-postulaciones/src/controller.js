@@ -1,6 +1,12 @@
 import express from 'express';
 import 'dotenv/config';
-import { obtenerEstadoOferta, verificarPostulacionExistente, insertarPostulacion, actualizarEstadoOferta } from './model.js';
+import { 
+  obtenerEstadoOferta, 
+  verificarPostulacionExistente, 
+  insertarPostulacion, 
+  actualizarEstadoOferta, 
+  obtenerPostulacionesPorEstudiante // <--- ¡Asegúrate de que esta esté aquí!
+} from './model.js';
 import { supabase } from './supabase.js';
 
 const app = express();
