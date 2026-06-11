@@ -1,7 +1,14 @@
 import express from 'express';
 import 'dotenv/config';
-import multer from 'multer';
-import { registrarEstudiante, obtenerTodosEstudiantes, actualizarEstudiante, eliminarEstudiante } from './model.js';
+import multer from 'multer'; 
+// 👇 ASEGÚRATE DE QUE 'subirCVSupabase' ESTÉ EN ESTA LÍNEA 👇
+import { 
+  registrarEstudiante, 
+  obtenerTodosEstudiantes, 
+  actualizarEstudiante, 
+  eliminarEstudiante, 
+  subirCVSupabase       // <--- ¡Faltaba agregar esto!
+} from './model.js';
 import { supabase } from './supabase.js';
 
 const app = express();
