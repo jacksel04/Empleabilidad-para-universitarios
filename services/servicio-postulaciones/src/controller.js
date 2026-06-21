@@ -5,7 +5,7 @@ import {
   verificarPostulacionExistente, 
   insertarPostulacion, 
   actualizarEstadoOferta, 
-  obtenerPostulacionesPorEstudiante // <--- ¡Asegúrate de que esta esté aquí!
+  obtenerPostulacionesPorEstudiante 
 } from './model.js';
 import { supabase } from './supabase.js';
 
