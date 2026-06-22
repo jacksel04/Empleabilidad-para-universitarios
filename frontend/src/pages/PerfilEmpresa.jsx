@@ -16,15 +16,34 @@ const formularioInicial = {
   confirmar_password: ""
 };
 
-export const PerfilEmpresa = () => {
+export const PerfilEmpresa = ({ estudiante }) => {
+  const empresaLogueada = estudiante?.rol === "empresa" ? estudiante.empresa : null;
+
   const [formulario, setFormulario] = useState(formularioInicial);
   const [cargando, setCargando] = useState(false);
   const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
-  const [empresaRegistrada, setEmpresaRegistrada] = useState(null);
+  const [empresaActual, setEmpresaActual] = useState(empresaLogueada);
 
   useEffect(() => {
     document.body.className = "dashboard-body";
-  }, []);
+
+    if (empresaLogueada) {
+      setEmpresaActual(empresaLogueada);
+
+      setFormulario({
+        nombre_empresa: empresaLogueada.nombre_empresa || "",
+        ruc: empresaLogueada.ruc || "",
+        sector: empresaLogueada.sector || "",
+        correo_contacto: empresaLogueada.correo_contacto || "",
+        telefono: empresaLogueada.telefono || "",
+        descripcion: empresaLogueada.descripcion || "",
+        sitio_web: empresaLogueada.sitio_web || "",
+        direccion: empresaLogueada.direccion || "",
+        password: "",
+        confirmar_password: ""
+      });
+    }
+  }, [empresaLogueada]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,49 +54,84 @@ export const PerfilEmpresa = () => {
     });
   };
 
-  const handleGuardarEmpresa = async () => {
-    try {
-      setCargando(true);
-      setNotificacion({ texto: "", tipo: "" });
+  const validarFormulario = () => {
+    if (!empresaLogueada?.id) {
+      throw new Error("No se encontró una empresa logueada para actualizar.");
+    }
 
-      if (!formulario.nombre_empresa || formulario.nombre_empresa.length < 3) {
-        throw new Error("El nombre de la empresa debe tener al menos 3 caracteres.");
-      }
+    if (!formulario.nombre_empresa || formulario.nombre_empresa.trim().length < 3) {
+      throw new Error("El nombre de la empresa debe tener al menos 3 caracteres.");
+    }
 
-      if (!formulario.correo_contacto) {
-        throw new Error("El correo de contacto es obligatorio.");
-      }
+    if (!formulario.correo_contacto || !formulario.correo_contacto.trim()) {
+      throw new Error("El correo de contacto es obligatorio.");
+    }
 
-      if (formulario.ruc && !/^[0-9]{11}$/.test(formulario.ruc)) {
-        throw new Error("El RUC debe contener exactamente 11 dígitos.");
-      }
+    if (formulario.ruc && !/^[0-9]{11}$/.test(formulario.ruc)) {
+      throw new Error("El RUC debe contener exactamente 11 dígitos.");
+    }
 
-      if (formulario.telefono && !/^[0-9]{9}$/.test(formulario.telefono)) {
-        throw new Error("El teléfono debe contener exactamente 9 dígitos.");
-      }
+    if (formulario.telefono && !/^[0-9]{9}$/.test(formulario.telefono)) {
+      throw new Error("El teléfono debe contener exactamente 9 dígitos.");
+    }
 
-      if (!formulario.password || formulario.password.length < 6) {
-        throw new Error("La contraseña debe tener al menos 6 caracteres.");
+    if (formulario.password || formulario.confirmar_password) {
+      if (formulario.password.length < 6) {
+        throw new Error("La nueva contraseña debe tener al menos 6 caracteres.");
       }
 
       if (formulario.password !== formulario.confirmar_password) {
         throw new Error("Las contraseñas no coinciden.");
       }
+    }
+  };
 
-      const datosEmpresa = {
-        nombre_empresa: formulario.nombre_empresa,
-        ruc: formulario.ruc,
-        sector: formulario.sector,
-        correo_contacto: formulario.correo_contacto,
-        telefono: formulario.telefono,
-        descripcion: formulario.descripcion,
-        sitio_web: formulario.sitio_web,
-        direccion: formulario.direccion,
-        password: formulario.password
-      };
+  const construirDatosEmpresa = () => {
+    const datosEmpresa = {
+      nombre_empresa: formulario.nombre_empresa,
+      ruc: formulario.ruc,
+      sector: formulario.sector,
+      correo_contacto: formulario.correo_contacto,
+      telefono: formulario.telefono,
+      descripcion: formulario.descripcion,
+      sitio_web: formulario.sitio_web,
+      direccion: formulario.direccion,
+      estado_verificacion: empresaActual?.estado_verificacion || "Pendiente"
+    };
 
-      const response = await fetch(`${API_BASE_URL}/api/empresas`, {
-        method: "POST",
+    // Solo se envía password si la empresa realmente desea cambiarlo.
+    if (formulario.password) {
+      datosEmpresa.password = formulario.password;
+    }
+
+    return datosEmpresa;
+  };
+
+  const actualizarLocalStorage = (empresaActualizada) => {
+    const usuarioActual = JSON.parse(localStorage.getItem("estudiante"));
+
+    const usuarioActualizado = {
+      ...usuarioActual,
+      nombre: empresaActualizada.nombre_empresa,
+      correo: empresaActualizada.correo_contacto,
+      rol: "empresa",
+      empresa: empresaActualizada
+    };
+
+    localStorage.setItem("estudiante", JSON.stringify(usuarioActualizado));
+  };
+
+  const handleActualizarEmpresa = async () => {
+    try {
+      setCargando(true);
+      setNotificacion({ texto: "", tipo: "" });
+
+      validarFormulario();
+
+      const datosEmpresa = construirDatosEmpresa();
+
+      const response = await fetch(`${API_BASE_URL}/api/empresas/${empresaLogueada.id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
@@ -87,13 +141,30 @@ export const PerfilEmpresa = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Error al registrar el perfil de empresa.");
+        throw new Error(data.error || "Error al actualizar el perfil de empresa.");
       }
 
-      setEmpresaRegistrada(data.empresa);
-      setFormulario(formularioInicial);
+      const empresaActualizada = data.empresa;
+
+      setEmpresaActual(empresaActualizada);
+
+      setFormulario({
+        nombre_empresa: empresaActualizada.nombre_empresa || "",
+        ruc: empresaActualizada.ruc || "",
+        sector: empresaActualizada.sector || "",
+        correo_contacto: empresaActualizada.correo_contacto || "",
+        telefono: empresaActualizada.telefono || "",
+        descripcion: empresaActualizada.descripcion || "",
+        sitio_web: empresaActualizada.sitio_web || "",
+        direccion: empresaActualizada.direccion || "",
+        password: "",
+        confirmar_password: ""
+      });
+
+      actualizarLocalStorage(empresaActualizada);
+
       setNotificacion({
-        texto: "¡Perfil de empresa registrado correctamente!",
+        texto: "¡Perfil de empresa actualizado correctamente!",
         tipo: "success"
       });
 
@@ -104,15 +175,26 @@ export const PerfilEmpresa = () => {
     }
   };
 
-  const nombreVista = formulario.nombre_empresa || empresaRegistrada?.nombre_empresa || "Empresa Reclutadora";
-  const sectorVista = formulario.sector || empresaRegistrada?.sector || "Sector empresarial";
+  if (!empresaLogueada) {
+    return (
+      <Container className="py-4">
+        <Alert variant="warning">
+          Este módulo está disponible solo para empresas que hayan iniciado sesión.
+        </Alert>
+      </Container>
+    );
+  }
+
+  const nombreVista = formulario.nombre_empresa || empresaActual?.nombre_empresa || "Empresa Reclutadora";
+  const sectorVista = formulario.sector || empresaActual?.sector || "Sector empresarial";
+  const estadoVista = empresaActual?.estado_verificacion || "Pendiente";
 
   return (
     <Container className="py-4">
       <div className="mb-4">
-        <h3 className="fw-bold text-dark">Perfil de Empresa</h3>
+        <h3 className="fw-bold text-dark">Mi Perfil Empresarial</h3>
         <p className="text-muted">
-          Registra la información institucional de una empresa reclutadora dentro de la plataforma.
+          Gestiona la información institucional visible para estudiantes y egresados.
         </p>
       </div>
 
@@ -129,7 +211,7 @@ export const PerfilEmpresa = () => {
       <Row className="g-4">
         <Col xs={12} lg={8}>
           <Card className="shadow-sm border-0 p-4 bg-white">
-            <h5 className="fw-bold text-dark mb-4">Datos de la Empresa</h5>
+            <h5 className="fw-bold text-dark mb-4">Datos Actuales de la Empresa</h5>
 
             <Form>
               <Row className="mb-3 g-3">
@@ -243,12 +325,16 @@ export const PerfilEmpresa = () => {
                 />
               </Form.Group>
 
-              <h6 className="fw-bold text-dark mb-3">Credenciales de Acceso</h6>
+              <h6 className="fw-bold text-dark mb-2">Cambio de Contraseña</h6>
+
+              <p className="text-muted small mb-3">
+                Deja estos campos vacíos si no deseas cambiar la contraseña actual.
+              </p>
 
               <Row className="mb-4 g-3">
                 <Form.Group as={Col} xs={12} md={6}>
                   <Form.Label className="fw-semibold text-secondary">
-                    Contraseña de Acceso
+                    Nueva Contraseña
                   </Form.Label>
                   <Form.Control
                     type="password"
@@ -261,7 +347,7 @@ export const PerfilEmpresa = () => {
 
                 <Form.Group as={Col} xs={12} md={6}>
                   <Form.Label className="fw-semibold text-secondary">
-                    Confirmar Contraseña
+                    Confirmar Nueva Contraseña
                   </Form.Label>
                   <Form.Control
                     type="password"
@@ -276,7 +362,7 @@ export const PerfilEmpresa = () => {
               <Button
                 variant="primary"
                 type="button"
-                onClick={handleGuardarEmpresa}
+                onClick={handleActualizarEmpresa}
                 disabled={cargando}
               >
                 {cargando ? (
@@ -287,10 +373,10 @@ export const PerfilEmpresa = () => {
                       size="sm"
                       className="me-2"
                     />
-                    Guardando...
+                    Actualizando...
                   </>
                 ) : (
-                  "Guardar Perfil de Empresa"
+                  "Actualizar Perfil de Empresa"
                 )}
               </Button>
             </Form>
@@ -314,20 +400,22 @@ export const PerfilEmpresa = () => {
               {sectorVista}
             </p>
 
-            <Badge bg="warning" className="p-2 mb-2 w-100">
-              Estado: Pendiente de Verificación
+            <Badge
+              bg={estadoVista === "Verificada" ? "success" : "warning"}
+              className="p-2 mb-2 w-100"
+            >
+              Estado: {estadoVista}
             </Badge>
 
-            {empresaRegistrada && (
-              <Badge bg="success" className="p-2 w-100">
-                Empresa registrada con ID: {empresaRegistrada.id}
-              </Badge>
-            )}
+            <Badge bg="secondary" className="p-2 w-100">
+              ID Empresa: {empresaLogueada.id}
+            </Badge>
 
             <hr />
 
             <p className="text-muted small mb-0">
-              Este módulo servirá para asociar empresas con ofertas laborales y procesos de selección.
+              Este módulo permite mantener actualizado el perfil institucional de la empresa
+              para su participación en ofertas laborales y procesos de selección.
             </p>
           </Card>
         </Col>

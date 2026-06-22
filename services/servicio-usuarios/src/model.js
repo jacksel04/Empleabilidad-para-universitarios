@@ -20,7 +20,7 @@ export const subirCVSupabase = async (supabase, fileBuffer, fileName) => {
     .from('curriculums')
     .upload(`cvs/${fileName}`, fileBuffer, {
       contentType: 'application/pdf',
-      upsert: true // Sobreescribe si el estudiante sube un CV actualizado
+      upsert: true
     });
 
   if (error) throw error;
@@ -37,10 +37,26 @@ export const subirCVSupabase = async (supabase, fileBuffer, fileName) => {
 // MODELO DE EMPRESAS
 // ===============================
 
+// Columnas públicas de empresa.
+// No se incluye password por seguridad.
+const columnasEmpresaPublicas = `
+  id,
+  nombre_empresa,
+  ruc,
+  sector,
+  correo_contacto,
+  telefono,
+  descripcion,
+  sitio_web,
+  direccion,
+  estado_verificacion,
+  created_at
+`;
+
 export const obtenerEmpresas = async (supabase) => {
   return await supabase
     .from('empresas')
-    .select('*')
+    .select(columnasEmpresaPublicas)
     .order('created_at', { ascending: false });
 };
 
@@ -48,7 +64,7 @@ export const crearEmpresa = async (supabase, datos) => {
   return await supabase
     .from('empresas')
     .insert([datos])
-    .select();
+    .select(columnasEmpresaPublicas);
 };
 
 export const actualizarEmpresa = async (supabase, id, datos) => {
@@ -56,5 +72,5 @@ export const actualizarEmpresa = async (supabase, id, datos) => {
     .from('empresas')
     .update(datos)
     .eq('id', id)
-    .select();
+    .select(columnasEmpresaPublicas);
 };

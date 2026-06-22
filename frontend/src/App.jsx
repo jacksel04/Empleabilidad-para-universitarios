@@ -9,13 +9,14 @@ import { PerfilEmpresa } from "./pages/PerfilEmpresa.jsx";
 import "./styles.css";
 
 function App() {
+  const vistasPermitidas = ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"];
+  const vistasEstudiante = ["dashboard", "bolsa", "perfil", "postulaciones"];
+
   // Lee la URL actual para saber en qué vista iniciar
   const obtenerVistaInicial = () => {
     const path = window.location.pathname.replace("/", "");
 
-    return ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"].includes(path)
-      ? path
-      : "dashboard";
+    return vistasPermitidas.includes(path) ? path : "dashboard";
   };
 
   const [estudiante, setEstudiante] = useState(null);
@@ -25,26 +26,59 @@ function App() {
     const estudianteGuardado = localStorage.getItem("estudiante");
 
     if (estudianteGuardado) {
-      const usuario = JSON.parse(estudianteGuardado);
-      setEstudiante(usuario);
+      try {
+        const usuario = JSON.parse(estudianteGuardado);
+        setEstudiante(usuario);
 
-      // Si el usuario guardado es empresa y está en una vista de estudiante,
-      // lo enviamos automáticamente al perfil de empresa.
-      const vistasEstudiante = ["dashboard", "bolsa", "perfil", "postulaciones"];
+        const vistaInicial = obtenerVistaInicial();
 
-      if (usuario.rol === "empresa" && vistasEstudiante.includes(obtenerVistaInicial())) {
-        setVistaActual("perfil-empresa");
-        window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+        // Si es empresa y está intentando entrar a una vista de estudiante,
+        // se redirige a Perfil Empresa.
+        if (usuario.rol === "empresa" && vistasEstudiante.includes(vistaInicial)) {
+          setVistaActual("perfil-empresa");
+          window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+        }
+
+        // Si es estudiante e intenta entrar a Perfil Empresa,
+        // se redirige al dashboard.
+        if (usuario.rol !== "empresa" && vistaInicial === "perfil-empresa") {
+          setVistaActual("dashboard");
+          window.history.replaceState({ vista: "dashboard" }, "", "/dashboard");
+        }
+
+      } catch (error) {
+        console.error("Error al leer usuario guardado:", error);
+        localStorage.removeItem("estudiante");
+        setEstudiante(null);
+        setVistaActual("dashboard");
       }
     }
 
     // Escucha los botones Atrás / Adelante del navegador
     const manejarBotonNavegador = (evento) => {
-      if (evento.state && evento.state.vista) {
-        setVistaActual(evento.state.vista);
-      } else {
-        setVistaActual(obtenerVistaInicial());
+      const vistaSolicitada = evento.state?.vista || obtenerVistaInicial();
+      const usuarioGuardado = localStorage.getItem("estudiante");
+
+      if (!usuarioGuardado) {
+        setVistaActual("dashboard");
+        return;
       }
+
+      const usuario = JSON.parse(usuarioGuardado);
+
+      if (usuario.rol === "empresa" && vistaSolicitada !== "perfil-empresa") {
+        setVistaActual("perfil-empresa");
+        window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+        return;
+      }
+
+      if (usuario.rol !== "empresa" && vistaSolicitada === "perfil-empresa") {
+        setVistaActual("dashboard");
+        window.history.replaceState({ vista: "dashboard" }, "", "/dashboard");
+        return;
+      }
+
+      setVistaActual(vistaSolicitada);
     };
 
     window.addEventListener("popstate", manejarBotonNavegador);
@@ -54,8 +88,35 @@ function App() {
 
   // Cambia de vista y actualiza la URL
   const navegarA = (nuevaVista) => {
+    if (!estudiante) {
+      setVistaActual("dashboard");
+      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
+      return;
+    }
+
+    const esEmpresa = estudiante.rol === "empresa";
+
+    // Bloqueo básico por rol
+    if (esEmpresa && nuevaVista !== "perfil-empresa") {
+      setVistaActual("perfil-empresa");
+      window.history.pushState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+      return;
+    }
+
+    if (!esEmpresa && nuevaVista === "perfil-empresa") {
+      setVistaActual("dashboard");
+      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
+      return;
+    }
+
     setVistaActual(nuevaVista);
     window.history.pushState({ vista: nuevaVista }, "", `/${nuevaVista}`);
+  };
+
+  // Permite que PerfilEmpresa actualice el usuario en memoria y localStorage
+  const actualizarUsuarioActual = (usuarioActualizado) => {
+    setEstudiante(usuarioActualizado);
+    localStorage.setItem("estudiante", JSON.stringify(usuarioActualizado));
   };
 
   // Inicio de sesión con redirección según rol
@@ -63,16 +124,19 @@ function App() {
     setEstudiante(datosEstudiante);
 
     if (datosEstudiante.rol === "empresa") {
-      navegarA("perfil-empresa");
+      setVistaActual("perfil-empresa");
+      window.history.pushState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
     } else {
-      navegarA("dashboard");
+      setVistaActual("dashboard");
+      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("estudiante");
     setEstudiante(null);
-    navegarA("login");
+    setVistaActual("dashboard");
+    window.history.pushState({ vista: "login" }, "", "/login");
     document.body.className = "login-body";
   };
 
@@ -82,11 +146,24 @@ function App() {
 
   const esEmpresa = estudiante.rol === "empresa";
 
+  const renderPerfilEmpresa = () => (
+    <PerfilEmpresa
+      estudiante={estudiante}
+      alCambiarVista={navegarA}
+      onActualizarUsuario={actualizarUsuarioActual}
+    />
+  );
+
   const renderVista = () => {
-    // Seguridad básica del frontend:
-    // si una empresa intenta entrar a rutas de estudiante, se le muestra Perfil Empresa.
-    if (esEmpresa && vistaActual !== "perfil-empresa") {
-      return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;
+    // Seguridad básica frontend:
+    // empresa solo puede ver Perfil Empresa
+    if (esEmpresa) {
+      return renderPerfilEmpresa();
+    }
+
+    // estudiante no puede ver Perfil Empresa
+    if (!esEmpresa && vistaActual === "perfil-empresa") {
+      return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
     }
 
     switch (vistaActual) {
@@ -99,16 +176,11 @@ function App() {
       case "perfil":
         return <Perfil estudiante={estudiante} alCambiarVista={navegarA} />;
 
-      case "perfil-empresa":
-        return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;
-
       case "postulaciones":
         return <Postulaciones estudiante={estudiante} alCambiarVista={navegarA} />;
 
       default:
-        return esEmpresa
-          ? <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />
-          : <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
+        return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
     }
   };
 
@@ -206,8 +278,7 @@ function App() {
               className="me-3 text-light d-none d-md-inline"
               style={{ fontSize: "0.85rem" }}
             >
-              Conectado como: <strong>{estudiante.nombre}</strong>
-              {" "}
+              Conectado como: <strong>{estudiante.nombre}</strong>{" "}
               <span className="text-warning">
                 ({esEmpresa ? "Empresa" : "Estudiante"})
               </span>
