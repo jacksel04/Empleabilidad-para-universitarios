@@ -11,7 +11,9 @@ const formularioInicial = {
   telefono: "",
   descripcion: "",
   sitio_web: "",
-  direccion: ""
+  direccion: "",
+  password: "",
+  confirmar_password: ""
 };
 
 export const PerfilEmpresa = () => {
@@ -21,8 +23,8 @@ export const PerfilEmpresa = () => {
   const [empresaRegistrada, setEmpresaRegistrada] = useState(null);
 
   useEffect(() => {
-  document.body.className = "dashboard-body";
-}, []);
+    document.body.className = "dashboard-body";
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,6 +44,10 @@ export const PerfilEmpresa = () => {
         throw new Error("El nombre de la empresa debe tener al menos 3 caracteres.");
       }
 
+      if (!formulario.correo_contacto) {
+        throw new Error("El correo de contacto es obligatorio.");
+      }
+
       if (formulario.ruc && !/^[0-9]{11}$/.test(formulario.ruc)) {
         throw new Error("El RUC debe contener exactamente 11 dígitos.");
       }
@@ -50,12 +56,32 @@ export const PerfilEmpresa = () => {
         throw new Error("El teléfono debe contener exactamente 9 dígitos.");
       }
 
+      if (!formulario.password || formulario.password.length < 6) {
+        throw new Error("La contraseña debe tener al menos 6 caracteres.");
+      }
+
+      if (formulario.password !== formulario.confirmar_password) {
+        throw new Error("Las contraseñas no coinciden.");
+      }
+
+      const datosEmpresa = {
+        nombre_empresa: formulario.nombre_empresa,
+        ruc: formulario.ruc,
+        sector: formulario.sector,
+        correo_contacto: formulario.correo_contacto,
+        telefono: formulario.telefono,
+        descripcion: formulario.descripcion,
+        sitio_web: formulario.sitio_web,
+        direccion: formulario.direccion,
+        password: formulario.password
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/empresas`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(formulario)
+        body: JSON.stringify(datosEmpresa)
       });
 
       const data = await response.json();
@@ -216,6 +242,36 @@ export const PerfilEmpresa = () => {
                   placeholder="Describe brevemente la empresa y el tipo de oportunidades que ofrece."
                 />
               </Form.Group>
+
+              <h6 className="fw-bold text-dark mb-3">Credenciales de Acceso</h6>
+
+              <Row className="mb-4 g-3">
+                <Form.Group as={Col} xs={12} md={6}>
+                  <Form.Label className="fw-semibold text-secondary">
+                    Contraseña de Acceso
+                  </Form.Label>
+                  <Form.Control
+                    type="password"
+                    name="password"
+                    value={formulario.password}
+                    onChange={handleChange}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </Form.Group>
+
+                <Form.Group as={Col} xs={12} md={6}>
+                  <Form.Label className="fw-semibold text-secondary">
+                    Confirmar Contraseña
+                  </Form.Label>
+                  <Form.Control
+                    type="password"
+                    name="confirmar_password"
+                    value={formulario.confirmar_password}
+                    onChange={handleChange}
+                    placeholder="Repita la contraseña"
+                  />
+                </Form.Group>
+              </Row>
 
               <Button
                 variant="primary"

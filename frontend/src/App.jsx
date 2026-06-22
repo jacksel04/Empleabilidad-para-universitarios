@@ -9,10 +9,13 @@ import { PerfilEmpresa } from "./pages/PerfilEmpresa.jsx";
 import "./styles.css";
 
 function App() {
-  // 1. Leemos la URL actual para saber en qué pestaña empezar si el usuario recarga la página
+  // Lee la URL actual para saber en qué vista iniciar
   const obtenerVistaInicial = () => {
     const path = window.location.pathname.replace("/", "");
-    return ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"].includes(path) ? path : "dashboard";
+
+    return ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"].includes(path)
+      ? path
+      : "dashboard";
   };
 
   const [estudiante, setEstudiante] = useState(null);
@@ -20,11 +23,22 @@ function App() {
 
   useEffect(() => {
     const estudianteGuardado = localStorage.getItem("estudiante");
+
     if (estudianteGuardado) {
-      setEstudiante(JSON.parse(estudianteGuardado));
+      const usuario = JSON.parse(estudianteGuardado);
+      setEstudiante(usuario);
+
+      // Si el usuario guardado es empresa y está en una vista de estudiante,
+      // lo enviamos automáticamente al perfil de empresa.
+      const vistasEstudiante = ["dashboard", "bolsa", "perfil", "postulaciones"];
+
+      if (usuario.rol === "empresa" && vistasEstudiante.includes(obtenerVistaInicial())) {
+        setVistaActual("perfil-empresa");
+        window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+      }
     }
 
-    // Escuchamos cuando el usuario presiona el botón "Atrás" o "Adelante" del navegador
+    // Escucha los botones Atrás / Adelante del navegador
     const manejarBotonNavegador = (evento) => {
       if (evento.state && evento.state.vista) {
         setVistaActual(evento.state.vista);
@@ -34,25 +48,31 @@ function App() {
     };
 
     window.addEventListener("popstate", manejarBotonNavegador);
+
     return () => window.removeEventListener("popstate", manejarBotonNavegador);
   }, []);
 
-  // Función para cambiar de pestaña y actualizar la URL al mismo tiempo
+  // Cambia de vista y actualiza la URL
   const navegarA = (nuevaVista) => {
     setVistaActual(nuevaVista);
-    // Agrega la nueva página al historial del navegador sin recargar
     window.history.pushState({ vista: nuevaVista }, "", `/${nuevaVista}`);
   };
 
+  // Inicio de sesión con redirección según rol
   const handleLoginSuccess = (datosEstudiante) => {
     setEstudiante(datosEstudiante);
-    navegarA("dashboard"); 
+
+    if (datosEstudiante.rol === "empresa") {
+      navegarA("perfil-empresa");
+    } else {
+      navegarA("dashboard");
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("estudiante");
     setEstudiante(null);
-    navegarA("login"); // Regresa la URL al inicio
+    navegarA("login");
     document.body.className = "login-body";
   };
 
@@ -60,20 +80,35 @@ function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
+  const esEmpresa = estudiante.rol === "empresa";
+
   const renderVista = () => {
+    // Seguridad básica del frontend:
+    // si una empresa intenta entrar a rutas de estudiante, se le muestra Perfil Empresa.
+    if (esEmpresa && vistaActual !== "perfil-empresa") {
+      return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;
+    }
+
     switch (vistaActual) {
       case "dashboard":
         return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
+
       case "bolsa":
         return <BolsaTrabajo estudiante={estudiante} alCambiarVista={navegarA} />;
+
       case "perfil":
         return <Perfil estudiante={estudiante} alCambiarVista={navegarA} />;
+
       case "perfil-empresa":
-        return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;  
+        return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;
+
       case "postulaciones":
         return <Postulaciones estudiante={estudiante} alCambiarVista={navegarA} />;
+
       default:
-        return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
+        return esEmpresa
+          ? <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />
+          : <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
     }
   };
 
@@ -81,12 +116,14 @@ function App() {
     <>
       <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm mb-4">
         <Container>
-          {/* Al hacer clic en el logo, te lleva al menú principal (Dashboard) */}
-          <Navbar.Brand 
-            href="#home" 
-            onClick={(e) => { e.preventDefault(); navegarA("dashboard"); }} 
+          <Navbar.Brand
+            href="#home"
+            onClick={(e) => {
+              e.preventDefault();
+              navegarA(esEmpresa ? "perfil-empresa" : "dashboard");
+            }}
             className="d-flex align-items-center"
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: "pointer" }}
           >
             <img
               src="/logo-unmsm-blanco.png"
@@ -96,34 +133,86 @@ function App() {
               alt="UNMSM Logo"
               style={{ mixBlendMode: "lighten" }}
             />
-            <span style={{ fontSize: "0.95rem", fontWeight: "600" }}>Empleabilidad UNMSM</span>
+
+            <span style={{ fontSize: "0.95rem", fontWeight: "600" }}>
+              Empleabilidad UNMSM
+            </span>
           </Navbar.Brand>
-          
+
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          
+
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto ms-3">
-              <Nav.Link active={vistaActual === "dashboard"} onClick={(e) => { e.preventDefault(); navegarA("dashboard"); }}>
-                Inicio
-              </Nav.Link>
-              <Nav.Link active={vistaActual === "bolsa"} onClick={(e) => { e.preventDefault(); navegarA("bolsa"); }}>
-                Bolsa de Trabajo
-              </Nav.Link>
-              <Nav.Link active={vistaActual === "postulaciones"} onClick={(e) => { e.preventDefault(); navegarA("postulaciones"); }}>
-                Mis Postulaciones
-              </Nav.Link>
-              <Nav.Link active={vistaActual === "perfil"} onClick={(e) => { e.preventDefault(); navegarA("perfil"); }}>
-                Mi Perfil
-              </Nav.Link>
-              <Nav.Link active={vistaActual === "perfil-empresa"} onClick={(e) => { e.preventDefault(); navegarA("perfil-empresa"); }}>
-                Perfil Empresa
-              </Nav.Link>
+              {/* MENÚ PARA ESTUDIANTE */}
+              {!esEmpresa && (
+                <>
+                  <Nav.Link
+                    active={vistaActual === "dashboard"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navegarA("dashboard");
+                    }}
+                  >
+                    Inicio
+                  </Nav.Link>
+
+                  <Nav.Link
+                    active={vistaActual === "bolsa"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navegarA("bolsa");
+                    }}
+                  >
+                    Bolsa de Trabajo
+                  </Nav.Link>
+
+                  <Nav.Link
+                    active={vistaActual === "postulaciones"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navegarA("postulaciones");
+                    }}
+                  >
+                    Mis Postulaciones
+                  </Nav.Link>
+
+                  <Nav.Link
+                    active={vistaActual === "perfil"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navegarA("perfil");
+                    }}
+                  >
+                    Mi Perfil
+                  </Nav.Link>
+                </>
+              )}
+
+              {/* MENÚ PARA EMPRESA */}
+              {esEmpresa && (
+                <Nav.Link
+                  active={vistaActual === "perfil-empresa"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navegarA("perfil-empresa");
+                  }}
+                >
+                  Perfil Empresa
+                </Nav.Link>
+              )}
             </Nav>
-            
-            <Navbar.Text className="me-3 text-light d-none d-md-inline" style={{ fontSize: "0.85rem" }}>
+
+            <Navbar.Text
+              className="me-3 text-light d-none d-md-inline"
+              style={{ fontSize: "0.85rem" }}
+            >
               Conectado como: <strong>{estudiante.nombre}</strong>
+              {" "}
+              <span className="text-warning">
+                ({esEmpresa ? "Empresa" : "Estudiante"})
+              </span>
             </Navbar.Text>
-            
+
             <Button variant="outline-light" size="sm" onClick={handleLogout}>
               Cerrar Sesión
             </Button>
