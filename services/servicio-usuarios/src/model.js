@@ -32,3 +32,29 @@ export const subirCVSupabase = async (supabase, fileBuffer, fileName) => {
 
   return publicUrlData.publicUrl;
 };
+
+// ===============================
+// MODELO DE EMPRESAS
+// ===============================
+
+export const obtenerEmpresas = async (supabase) => {
+  return await supabase
+    .from('empresas')
+    .select('*')
+    .order('created_at', { ascending: false });
+};
+
+export const crearEmpresa = async (supabase, datos) => {
+  return await supabase
+    .from('empresas')
+    .insert([datos])
+    .select();
+};
+
+export const actualizarEmpresa = async (supabase, id, datos) => {
+  return await supabase
+    .from('empresas')
+    .update(datos)
+    .eq('id', id)
+    .select();
+};

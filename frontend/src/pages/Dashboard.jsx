@@ -42,7 +42,7 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
     <Container className="py-2">
       {/* BANNER DE BIENVENIDA */}
       <div className="bg-white p-4 rounded shadow-sm mb-4 border-start border-primary border-4">
-        <span className="text-muted text-uppercase sm-text block style={{fontSize: '0.75rem'}}">Panel Principal</span>
+        <span className="text-muted text-uppercase d-block" style={{ fontSize: "0.75rem" }}>Panel Principal</span>
         <h2 className="fw-bold text-dark">¡Bienvenido de vuelta, {estudiante.nombre}!</h2>
         <p className="text-secondary m-0">
           Este es tu centro de mando. Aquí tienes un resumen de las vacantes actuales y el estado de la plataforma.
@@ -128,6 +128,9 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
               </Button>
               <Button variant="outline-dark" className="text-start py-3" onClick={() => alCambiarVista("perfil")}>
                 👤 Completar mi Perfil / CV
+              </Button>
+              <Button variant="outline-secondary" className="text-start py-3" onClick={() => alCambiarVista("perfil-empresa")}>
+                🏢 Registrar Perfil de Empresa
               </Button>
             </Card.Body>
           </Card>

@@ -5,13 +5,14 @@ import { Dashboard } from "./pages/Dashboard.jsx";
 import { BolsaTrabajo } from "./pages/BolsaTrabajo.jsx";
 import { Perfil } from "./pages/Perfil.jsx";
 import { Postulaciones } from "./pages/Postulaciones.jsx";
+import { PerfilEmpresa } from "./pages/PerfilEmpresa.jsx";
 import "./styles.css";
 
 function App() {
   // 1. Leemos la URL actual para saber en qué pestaña empezar si el usuario recarga la página
   const obtenerVistaInicial = () => {
     const path = window.location.pathname.replace("/", "");
-    return ["dashboard", "bolsa", "perfil", "postulaciones"].includes(path) ? path : "dashboard";
+    return ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"].includes(path) ? path : "dashboard";
   };
 
   const [estudiante, setEstudiante] = useState(null);
@@ -67,6 +68,8 @@ function App() {
         return <BolsaTrabajo estudiante={estudiante} alCambiarVista={navegarA} />;
       case "perfil":
         return <Perfil estudiante={estudiante} alCambiarVista={navegarA} />;
+      case "perfil-empresa":
+        return <PerfilEmpresa estudiante={estudiante} alCambiarVista={navegarA} />;  
       case "postulaciones":
         return <Postulaciones estudiante={estudiante} alCambiarVista={navegarA} />;
       default:
@@ -111,6 +114,9 @@ function App() {
               </Nav.Link>
               <Nav.Link active={vistaActual === "perfil"} onClick={(e) => { e.preventDefault(); navegarA("perfil"); }}>
                 Mi Perfil
+              </Nav.Link>
+              <Nav.Link active={vistaActual === "perfil-empresa"} onClick={(e) => { e.preventDefault(); navegarA("perfil-empresa"); }}>
+                Perfil Empresa
               </Nav.Link>
             </Nav>
             

@@ -7,7 +7,10 @@ import {
   obtenerTodosEstudiantes, 
   actualizarEstudiante, 
   eliminarEstudiante, 
-  subirCVSupabase       // <--- ¡Faltaba agregar esto!
+  subirCVSupabase,
+  obtenerEmpresas,
+  crearEmpresa,
+  actualizarEmpresa
 } from './model.js';
 import { supabase } from './supabase.js';
 
@@ -82,6 +85,132 @@ app.delete('/api/estudiantes', async (req, res) => {
     
   if (error) return res.status(500).json({ error: error.message });
   return res.status(200).json({ mensaje: "Cuenta de estudiante eliminada del sistema" });
+});
+
+// ===============================
+// RUTAS DE EMPRESAS
+// ===============================
+
+// Listar empresas
+app.get('/api/empresas', async (req, res) => {
+  try {
+    const { data, error } = await obtenerEmpresas(supabase);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno del servidor: " + error.message });
+  }
+});
+
+// Registrar perfil de empresa
+app.post('/api/empresas', async (req, res) => {
+  try {
+    const {
+      nombre_empresa,
+      ruc,
+      sector,
+      correo_contacto,
+      telefono,
+      descripcion,
+      sitio_web,
+      direccion
+    } = req.body;
+
+    if (!nombre_empresa || nombre_empresa.length < 3) {
+      return res.status(400).json({
+        error: "El nombre de la empresa es obligatorio y debe tener al menos 3 caracteres."
+      });
+    }
+
+    if (ruc && !/^[0-9]{11}$/.test(ruc)) {
+      return res.status(400).json({
+        error: "El RUC debe contener exactamente 11 dígitos."
+      });
+    }
+
+    if (telefono && !/^[0-9]{9}$/.test(telefono)) {
+      return res.status(400).json({
+        error: "El teléfono debe contener exactamente 9 dígitos."
+      });
+    }
+
+    const nuevaEmpresa = {
+      nombre_empresa,
+      ruc,
+      sector,
+      correo_contacto,
+      telefono,
+      descripcion,
+      sitio_web,
+      direccion,
+      estado_verificacion: 'Pendiente'
+    };
+
+    const { data, error } = await crearEmpresa(supabase, nuevaEmpresa);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(201).json({
+      mensaje: "Perfil de empresa registrado correctamente",
+      empresa: data[0]
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno del servidor: " + error.message });
+  }
+});
+
+// Actualizar perfil de empresa
+app.put('/api/empresas/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      nombre_empresa,
+      ruc,
+      sector,
+      correo_contacto,
+      telefono,
+      descripcion,
+      sitio_web,
+      direccion,
+      estado_verificacion
+    } = req.body;
+
+    const datosActualizar = {
+      nombre_empresa,
+      ruc,
+      sector,
+      correo_contacto,
+      telefono,
+      descripcion,
+      sitio_web,
+      direccion,
+      estado_verificacion
+    };
+
+    const { data, error } = await actualizarEmpresa(supabase, id, datosActualizar);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: "Empresa no encontrada." });
+    }
+
+    return res.status(200).json({
+      mensaje: "Perfil de empresa actualizado correctamente",
+      empresa: data[0]
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno del servidor: " + error.message });
+  }
 });
 
 app.listen(PORT, () => {
