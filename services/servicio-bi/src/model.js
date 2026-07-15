@@ -7,5 +7,8 @@ export const contarEstudiantes = async (supabase) => {
 };
 
 export const contarOfertasActivas = async (supabase) => {
-  return await supabase.from('ofertas').select('*', { count: 'exact', head: true }).eq('estado', 'Activa');
+  return await supabase
+    .from("ofertas")
+    .select("*", { count: "exact", head: true })
+    .eq("estado", "Activo");
 };
