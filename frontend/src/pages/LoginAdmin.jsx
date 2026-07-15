@@ -4,19 +4,12 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:3000";
 
-export const Login = ({
+export const LoginAdmin = ({
   onLoginSuccess,
-  onAdminAccess
+  onVolver
 }) => {
   const [correo, setCorreo] = useState("");
-  const [password, setPassword] =
-    useState("");
-
-  const [remember, setRemember] =
-    useState(false);
-
-  const [rol, setRol] =
-    useState("estudiante");
+  const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -49,31 +42,14 @@ export const Login = ({
 
     if (!correoLimpio) {
       nuevosErrores.correo =
-        rol === "estudiante"
-          ? "Ingrese su correo institucional."
-          : "Ingrese el correo de contacto de la empresa.";
-
-      formularioValido = false;
-    }
-
-    if (
-      rol === "estudiante" &&
-      correoLimpio &&
-      !correoLimpio.endsWith(
-        "@unmsm.edu.pe"
-      )
-    ) {
-      nuevosErrores.correo =
-        "Debe usar un correo @unmsm.edu.pe.";
+        "Ingrese el correo administrativo.";
 
       formularioValido = false;
     }
 
     if (!passwordLimpia) {
       nuevosErrores.password =
-        rol === "estudiante"
-          ? "Ingrese su contraseña."
-          : "Ingrese la contraseña de la empresa.";
+        "Ingrese la contraseña administrativa.";
 
       formularioValido = false;
     }
@@ -87,73 +63,15 @@ export const Login = ({
     try {
       setIsLoading(true);
 
-      if (rol === "estudiante") {
-        const response = await fetch(
-          `${API_BASE_URL}/api/estudiantes`
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            "No se pudo obtener la lista de estudiantes."
-          );
-        }
-
-        const estudiantes =
-          await response.json();
-
-        const estudianteEncontrado =
-          estudiantes.find(
-            (item) =>
-              item.correo?.toLowerCase() ===
-                correoLimpio &&
-              item.password ===
-                passwordLimpia
-          );
-
-        if (!estudianteEncontrado) {
-          setErrors({
-            correo:
-              "El correo no se encuentra registrado o la contraseña es incorrecta.",
-            password: ""
-          });
-
-          setIsLoading(false);
-          return;
-        }
-
-        const usuarioConRol = {
-          ...estudianteEncontrado,
-          rol: "estudiante"
-        };
-
-        localStorage.setItem(
-          "estudiante",
-          JSON.stringify(usuarioConRol)
-        );
-
-        setIsSuccess(true);
-
-        document.body.className =
-          "dashboard-body";
-
-        setTimeout(() => {
-          onLoginSuccess(usuarioConRol);
-        }, 900);
-
-        return;
-      }
-
       const response = await fetch(
-        `${API_BASE_URL}/api/empresas/login`,
+        `${API_BASE_URL}/api/administradores/login`,
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json"
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            correo_contacto:
-              correoLimpio,
+            correo: correoLimpio,
             password: passwordLimpia
           })
         }
@@ -165,7 +83,7 @@ export const Login = ({
         setErrors({
           correo:
             data.error ||
-            "La empresa no se encuentra registrada o la contraseña es incorrecta.",
+            "Las credenciales administrativas son incorrectas.",
           password: ""
         });
 
@@ -173,38 +91,38 @@ export const Login = ({
         return;
       }
 
-      const empresa = data.empresa;
+      const administrador =
+        data.administrador;
 
-      const usuarioEmpresa = {
-        id: empresa.id,
-        nombre: empresa.nombre_empresa,
-        correo: empresa.correo_contacto,
-        rol: "empresa",
-        empresa
+      const usuarioAdmin = {
+        id: administrador.id,
+        nombre: administrador.nombre,
+        correo: administrador.correo,
+        estado: administrador.estado,
+        rol: "admin"
       };
 
       localStorage.setItem(
         "estudiante",
-        JSON.stringify(usuarioEmpresa)
+        JSON.stringify(usuarioAdmin)
       );
 
       setIsSuccess(true);
-
       document.body.className =
         "dashboard-body";
 
       setTimeout(() => {
-        onLoginSuccess(usuarioEmpresa);
+        onLoginSuccess(usuarioAdmin);
       }, 900);
     } catch (error) {
       console.error(
-        "Error durante el login:",
+        "Error en el login administrativo:",
         error
       );
 
       setErrors({
         correo:
-          "Error al conectar con la API.",
+          "No se pudo conectar con el servidor.",
         password: ""
       });
 
@@ -223,21 +141,20 @@ export const Login = ({
           />
 
           <h1>
-            Plataforma de Empleabilidad UNMSM
+            Administración de Empleabilidad UNMSM
           </h1>
 
           <p>
-            Conecta estudiantes, egresados y
-            empresas con oportunidades laborales,
-            permitiendo consultar ofertas,
-            postular y gestionar procesos desde
-            una plataforma web.
+            Espacio reservado para la supervisión
+            de indicadores, usuarios, empresas,
+            ofertas laborales y postulaciones
+            registradas en la plataforma.
           </p>
 
           <div className="hero-summary">
-            <span>Acceso académico</span>
-            <span>Empresas reclutadoras</span>
-            <span>Postulación en línea</span>
+            <span>Indicadores operativos</span>
+            <span>Supervisión de la plataforma</span>
+            <span>Acceso restringido</span>
           </div>
         </div>
       </section>
@@ -258,17 +175,42 @@ export const Login = ({
                   cx="26"
                   cy="26"
                   r="26"
-                  fill="url(#gradient)"
+                  fill="url(#adminGradient)"
                 />
 
                 <path
-                  d="M16 28L26 16L36 28H31V36H21V28H16Z"
+                  d="M17 24V20C17 15.03 21.03 11 26 11C30.97 11 35 15.03 35 20V24"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+
+                <rect
+                  x="14"
+                  y="23"
+                  width="24"
+                  height="18"
+                  rx="3"
                   fill="white"
+                />
+
+                <circle
+                  cx="26"
+                  cy="31"
+                  r="2.5"
+                  fill="#1E3A8A"
+                />
+
+                <path
+                  d="M26 33.5V37"
+                  stroke="#1E3A8A"
+                  strokeWidth="2"
+                  strokeLinecap="round"
                 />
 
                 <defs>
                   <linearGradient
-                    id="gradient"
+                    id="adminGradient"
                     x1="0%"
                     y1="0%"
                     x2="100%"
@@ -276,24 +218,23 @@ export const Login = ({
                   >
                     <stop
                       offset="0%"
-                      stopColor="#1E3A8A"
+                      stopColor="#18324F"
                     />
 
                     <stop
                       offset="100%"
-                      stopColor="#4ECDC4"
+                      stopColor="#287F7A"
                     />
                   </linearGradient>
                 </defs>
               </svg>
             </div>
 
-            <h2>Iniciar sesión</h2>
+            <h2>Acceso administrativo</h2>
 
             <p>
-              {rol === "estudiante"
-                ? "Acceso para estudiantes y egresados"
-                : "Acceso para empresas reclutadoras"}
+              Ingrese las credenciales asignadas
+              al administrador de la plataforma
             </p>
           </div>
 
@@ -304,81 +245,34 @@ export const Login = ({
                 onSubmit={handleSubmit}
                 noValidate
               >
-                <div className="form-field">
-                  <select
-                    id="rol"
-                    name="rol"
-                    value={rol}
-                    onChange={(event) => {
-                      setRol(
-                        event.target.value
-                      );
-
-                      setCorreo("");
-                      setPassword("");
-
-                      setErrors({
-                        correo: "",
-                        password: ""
-                      });
-                    }}
-                    disabled={isLoading}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      borderRadius: "8px",
-                      border:
-                        "1px solid #ddd",
-                      backgroundColor: "white",
-                      fontSize: "0.95rem"
-                    }}
-                  >
-                    <option value="estudiante">
-                      Estudiante / Egresado
-                    </option>
-
-                    <option value="empresa">
-                      Empresa Reclutadora
-                    </option>
-                  </select>
-                </div>
-
                 <div
                   className={`form-field ${
-                    errors.correo
-                      ? "error"
-                      : ""
+                    errors.correo ? "error" : ""
                   }`}
                 >
                   <input
                     type="email"
-                    id="correo"
-                    name="correo"
+                    id="correoAdmin"
+                    name="correoAdmin"
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                     placeholder=" "
                     value={correo}
                     onChange={(event) =>
-                      setCorreo(
-                        event.target.value
-                      )
+                      setCorreo(event.target.value)
                     }
                     disabled={isLoading}
                   />
 
-                  <label htmlFor="correo">
-                    {rol === "estudiante"
-                      ? "Correo institucional"
-                      : "Correo de empresa"}
+                  <label htmlFor="correoAdmin">
+                    Correo administrativo
                   </label>
 
                   <div className="field-line"></div>
 
                   <span
                     className={`error-message ${
-                      errors.correo
-                        ? "show"
-                        : ""
+                      errors.correo ? "show" : ""
                     }`}
                   >
                     {errors.correo}
@@ -398,8 +292,8 @@ export const Login = ({
                         ? "text"
                         : "password"
                     }
-                    id="password"
-                    name="password"
+                    id="passwordAdmin"
+                    name="passwordAdmin"
                     required
                     autoComplete="current-password"
                     placeholder=" "
@@ -412,10 +306,8 @@ export const Login = ({
                     disabled={isLoading}
                   />
 
-                  <label htmlFor="password">
-                    {rol === "estudiante"
-                      ? "Contraseña"
-                      : "Contraseña de empresa"}
+                  <label htmlFor="passwordAdmin">
+                    Contraseña administrativa
                   </label>
 
                   <button
@@ -454,36 +346,6 @@ export const Login = ({
                   </span>
                 </div>
 
-                <div className="form-actions">
-                  <label className="remember-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(event) =>
-                        setRemember(
-                          event.target.checked
-                        )
-                      }
-                    />
-
-                    <span className="checkbox-custom"></span>
-
-                    <span className="checkbox-label">
-                      Recordarme
-                    </span>
-                  </label>
-
-                  <a
-                    href="#"
-                    className="forgot-password"
-                    onClick={(event) =>
-                      event.preventDefault()
-                    }
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                </div>
-
                 <button
                   type="submit"
                   className={`signin-button ${
@@ -492,7 +354,7 @@ export const Login = ({
                   disabled={isLoading}
                 >
                   <span className="button-text">
-                    Iniciar sesión
+                    Iniciar Sesión
                   </span>
 
                   <div className="button-loader">
@@ -503,58 +365,33 @@ export const Login = ({
 
               <div className="login-note">
                 <p>
-                  {rol === "estudiante"
-                    ? "Ingresa con un correo institucional registrado en la plataforma."
-                    : "Ingresa con el correo de contacto y la contraseña de la empresa."}
-                  {" "}
-                  Esta versión corresponde a un
-                  prototipo académico conectado a
-                  API y Supabase.
+                  Este acceso está reservado para
+                  personal autorizado. Las cuentas
+                  administrativas no pueden
+                  registrarse desde la plataforma.
                 </p>
-              </div>
-
-              <div className="signup-prompt">
-                <span>
-                  ¿Aún no tienes perfil?  
-                </span>
-
-                <a
-                  href="#"
-                  className="signup-link"
-                  onClick={(event) =>
-                    event.preventDefault()
-                  }
-                >
-                  Solicita tu registro 
-                </a>
               </div>
 
               <div
                 style={{
                   marginTop: "18px",
-                  paddingTop: "16px",
-                  borderTop:
-                    "1px solid #E5E7EB",
                   textAlign: "center"
                 }}
               >
                 <button
                   type="button"
-                  onClick={onAdminAccess}
+                  onClick={onVolver}
                   disabled={isLoading}
                   style={{
                     border: "none",
-                    background:
-                      "transparent",
-                    color: "#475569",
-                    fontSize: "0.86rem",
+                    background: "transparent",
+                    color: "#1E3A8A",
                     fontWeight: "600",
                     cursor: "pointer",
-                    textDecoration:
-                      "underline"
+                    textDecoration: "underline"
                   }}
                 >
-                  Acceso administrativo
+                  Volver al acceso principal
                 </button>
               </div>
             </>
@@ -571,7 +408,7 @@ export const Login = ({
                     cx="21"
                     cy="21"
                     r="21"
-                    fill="url(#successGradient)"
+                    fill="url(#adminSuccessGradient)"
                   />
 
                   <path
@@ -584,7 +421,7 @@ export const Login = ({
 
                   <defs>
                     <linearGradient
-                      id="successGradient"
+                      id="adminSuccessGradient"
                       x1="0%"
                       y1="0%"
                       x2="100%"
@@ -592,12 +429,12 @@ export const Login = ({
                     >
                       <stop
                         offset="0%"
-                        stopColor="#4ECDC4"
+                        stopColor="#287F7A"
                       />
 
                       <stop
                         offset="100%"
-                        stopColor="#1E3A8A"
+                        stopColor="#18324F"
                       />
                     </linearGradient>
                   </defs>
@@ -609,9 +446,8 @@ export const Login = ({
               </h3>
 
               <p>
-                {rol === "estudiante"
-                  ? "Redirigiendo al panel principal..."
-                  : "Redirigiendo al perfil de empresa..."}
+                Redirigiendo al Panel
+                Administrativo...
               </p>
             </div>
           )}

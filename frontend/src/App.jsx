@@ -1,7 +1,17 @@
-import { useEffect, useState } from "react";
-import { Navbar, Nav, Container, Button } from "react-bootstrap";
+import {
+  useEffect,
+  useState
+} from "react";
+
+import {
+  Navbar,
+  Nav,
+  Container,
+  Button
+} from "react-bootstrap";
 
 import { Login } from "./pages/Login.jsx";
+import { LoginAdmin } from "./pages/LoginAdmin.jsx";
 import { Dashboard } from "./pages/Dashboard.jsx";
 import { BolsaTrabajo } from "./pages/BolsaTrabajo.jsx";
 import { Perfil } from "./pages/Perfil.jsx";
@@ -10,6 +20,13 @@ import { PerfilEmpresa } from "./pages/PerfilEmpresa.jsx";
 import { PanelAdmin } from "./pages/PanelAdmin.jsx";
 
 import "./styles.css";
+
+const obtenerTipoLoginDesdeRuta = () => {
+  return window.location.pathname ===
+    "/admin/login"
+    ? "admin"
+    : "publico";
+};
 
 function App() {
   const vistasPermitidas = [
@@ -28,26 +45,27 @@ function App() {
     "postulaciones"
   ];
 
-  // Lee la URL actual para determinar la vista inicial.
   const obtenerVistaInicial = () => {
-    const path = window.location.pathname.replace("/", "");
+    const path =
+      window.location.pathname.replace(
+        /^\/+/,
+        ""
+      );
 
     return vistasPermitidas.includes(path)
       ? path
       : "dashboard";
   };
 
-  /*
-   * Se conserva el nombre "estudiante" para no romper el flujo existente.
-   * Esta variable puede almacenar temporalmente estudiantes,
-   * empresas o administradores.
-   */
-  const [estudiante, setEstudiante] = useState(null);
-  const [vistaActual, setVistaActual] = useState(
-    obtenerVistaInicial()
-  );
+  const [estudiante, setEstudiante] =
+    useState(null);
 
-  // Define la pantalla principal correspondiente a cada rol.
+  const [vistaActual, setVistaActual] =
+    useState(obtenerVistaInicial);
+
+  const [tipoLogin, setTipoLogin] =
+    useState(obtenerTipoLoginDesdeRuta);
+
   const obtenerVistaPorRol = (usuario) => {
     if (usuario?.rol === "admin") {
       return "panel-admin";
@@ -60,8 +78,10 @@ function App() {
     return "dashboard";
   };
 
-  // Determina si un usuario puede acceder a una vista.
-  const vistaPermitidaParaUsuario = (usuario, vista) => {
+  const vistaPermitidaParaUsuario = (
+    usuario,
+    vista
+  ) => {
     if (usuario?.rol === "admin") {
       return vista === "panel-admin";
     }
@@ -73,21 +93,64 @@ function App() {
     return vistasEstudiante.includes(vista);
   };
 
-  // Cambia la vista y actualiza la URL.
   const redirigirAVista = (
     nuevaVista,
     metodo = "replace"
   ) => {
     setVistaActual(nuevaVista);
 
-    const estado = { vista: nuevaVista };
+    const estado = {
+      vista: nuevaVista
+    };
+
     const ruta = `/${nuevaVista}`;
 
     if (metodo === "push") {
-      window.history.pushState(estado, "", ruta);
+      window.history.pushState(
+        estado,
+        "",
+        ruta
+      );
     } else {
-      window.history.replaceState(estado, "", ruta);
+      window.history.replaceState(
+        estado,
+        "",
+        ruta
+      );
     }
+  };
+
+  const redirigirALogin = (
+    nuevoTipo,
+    metodo = "push"
+  ) => {
+    const ruta =
+      nuevoTipo === "admin"
+        ? "/admin/login"
+        : "/login";
+
+    setTipoLogin(nuevoTipo);
+
+    const estado = {
+      login: nuevoTipo
+    };
+
+    if (metodo === "replace") {
+      window.history.replaceState(
+        estado,
+        "",
+        ruta
+      );
+    } else {
+      window.history.pushState(
+        estado,
+        "",
+        ruta
+      );
+    }
+
+    document.body.className =
+      "login-body";
   };
 
   useEffect(() => {
@@ -96,11 +159,16 @@ function App() {
 
     if (usuarioGuardado) {
       try {
-        const usuario = JSON.parse(usuarioGuardado);
+        const usuario =
+          JSON.parse(usuarioGuardado);
 
         setEstudiante(usuario);
 
-        const vistaInicial = obtenerVistaInicial();
+        document.body.className =
+          "dashboard-body";
+
+        const vistaInicial =
+          obtenerVistaInicial();
 
         if (
           vistaPermitidaParaUsuario(
@@ -120,26 +188,66 @@ function App() {
           error
         );
 
-        localStorage.removeItem("estudiante");
+        localStorage.removeItem(
+          "estudiante"
+        );
+
         setEstudiante(null);
-        setVistaActual("dashboard");
+
+        redirigirALogin(
+          "publico",
+          "replace"
+        );
+      }
+    } else {
+      const loginInicial =
+        obtenerTipoLoginDesdeRuta();
+
+      setTipoLogin(loginInicial);
+
+      document.body.className =
+        "login-body";
+
+      const rutaEsperada =
+        loginInicial === "admin"
+          ? "/admin/login"
+          : "/login";
+
+      if (
+        window.location.pathname !==
+        rutaEsperada
+      ) {
+        window.history.replaceState(
+          {
+            login: loginInicial
+          },
+          "",
+          rutaEsperada
+        );
       }
     }
 
-    // Controla los botones Atrás y Adelante del navegador.
-    const manejarBotonNavegador = (evento) => {
+    const manejarBotonNavegador = (
+      evento
+    ) => {
       const usuarioAlmacenado =
         localStorage.getItem("estudiante");
 
       if (!usuarioAlmacenado) {
-        setVistaActual("dashboard");
+        const loginSolicitado =
+          obtenerTipoLoginDesdeRuta();
+
+        setTipoLogin(loginSolicitado);
+
+        document.body.className =
+          "login-body";
+
         return;
       }
 
       try {
-        const usuario = JSON.parse(
-          usuarioAlmacenado
-        );
+        const usuario =
+          JSON.parse(usuarioAlmacenado);
 
         const vistaSolicitada =
           evento.state?.vista ||
@@ -151,7 +259,9 @@ function App() {
             vistaSolicitada
           )
         ) {
-          setVistaActual(vistaSolicitada);
+          setVistaActual(
+            vistaSolicitada
+          );
         } else {
           redirigirAVista(
             obtenerVistaPorRol(usuario)
@@ -163,9 +273,16 @@ function App() {
           error
         );
 
-        localStorage.removeItem("estudiante");
+        localStorage.removeItem(
+          "estudiante"
+        );
+
         setEstudiante(null);
-        setVistaActual("dashboard");
+
+        redirigirALogin(
+          "publico",
+          "replace"
+        );
       }
     };
 
@@ -182,10 +299,9 @@ function App() {
     };
   }, []);
 
-  // Navegación interna con validación por rol.
   const navegarA = (nuevaVista) => {
     if (!estudiante) {
-      redirigirAVista("dashboard", "push");
+      redirigirALogin("publico");
       return;
     }
 
@@ -199,13 +315,16 @@ function App() {
         obtenerVistaPorRol(estudiante),
         "push"
       );
+
       return;
     }
 
-    redirigirAVista(nuevaVista, "push");
+    redirigirAVista(
+      nuevaVista,
+      "push"
+    );
   };
 
-  // Permite actualizar los datos del usuario actual.
   const actualizarUsuarioActual = (
     usuarioActualizado
   ) => {
@@ -217,9 +336,13 @@ function App() {
     );
   };
 
-  // Redirección después del login según el rol.
-  const handleLoginSuccess = (usuario) => {
+  const handleLoginSuccess = (
+    usuario
+  ) => {
     setEstudiante(usuario);
+
+    document.body.className =
+      "dashboard-body";
 
     const vistaDestino =
       obtenerVistaPorRol(usuario);
@@ -231,24 +354,53 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("estudiante");
+    const eraAdministrador =
+      estudiante?.rol === "admin";
+
+    localStorage.removeItem(
+      "estudiante"
+    );
 
     setEstudiante(null);
     setVistaActual("dashboard");
 
-    window.history.pushState(
-      { vista: "login" },
-      "",
-      "/login"
+    redirigirALogin(
+      eraAdministrador
+        ? "admin"
+        : "publico"
     );
+  };
 
-    document.body.className = "login-body";
+  const abrirLoginAdmin = () => {
+    redirigirALogin("admin");
+  };
+
+  const volverLoginPublico = () => {
+    redirigirALogin("publico");
   };
 
   if (!estudiante) {
+    if (tipoLogin === "admin") {
+      return (
+        <LoginAdmin
+          onLoginSuccess={
+            handleLoginSuccess
+          }
+          onVolver={
+            volverLoginPublico
+          }
+        />
+      );
+    }
+
     return (
       <Login
-        onLoginSuccess={handleLoginSuccess}
+        onLoginSuccess={
+          handleLoginSuccess
+        }
+        onAdminAccess={
+          abrirLoginAdmin
+        }
       />
     );
   }
@@ -285,17 +437,14 @@ function App() {
   );
 
   const renderVista = () => {
-    // El administrador solo puede visualizar su panel.
     if (esAdmin) {
       return <PanelAdmin />;
     }
 
-    // La empresa solo puede visualizar su perfil.
     if (esEmpresa) {
       return renderPerfilEmpresa();
     }
 
-    // Flujo correspondiente al estudiante.
     switch (vistaActual) {
       case "dashboard":
         return (
@@ -358,10 +507,15 @@ function App() {
             href="#home"
             onClick={(event) => {
               event.preventDefault();
-              navegarA(vistaPrincipal);
+
+              navegarA(
+                vistaPrincipal
+              );
             }}
             className="d-flex align-items-center"
-            style={{ cursor: "pointer" }}
+            style={{
+              cursor: "pointer"
+            }}
           >
             <img
               src="/logo-unmsm-blanco.png"
@@ -390,16 +544,19 @@ function App() {
 
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto ms-3">
-              {/* MENÚ PARA ESTUDIANTE */}
               {esEstudiante && (
                 <>
                   <Nav.Link
                     active={
-                      vistaActual === "dashboard"
+                      vistaActual ===
+                      "dashboard"
                     }
                     onClick={(event) => {
                       event.preventDefault();
-                      navegarA("dashboard");
+
+                      navegarA(
+                        "dashboard"
+                      );
                     }}
                   >
                     Inicio
@@ -407,10 +564,12 @@ function App() {
 
                   <Nav.Link
                     active={
-                      vistaActual === "bolsa"
+                      vistaActual ===
+                      "bolsa"
                     }
                     onClick={(event) => {
                       event.preventDefault();
+
                       navegarA("bolsa");
                     }}
                   >
@@ -424,7 +583,10 @@ function App() {
                     }
                     onClick={(event) => {
                       event.preventDefault();
-                      navegarA("postulaciones");
+
+                      navegarA(
+                        "postulaciones"
+                      );
                     }}
                   >
                     Mis Postulaciones
@@ -432,10 +594,12 @@ function App() {
 
                   <Nav.Link
                     active={
-                      vistaActual === "perfil"
+                      vistaActual ===
+                      "perfil"
                     }
                     onClick={(event) => {
                       event.preventDefault();
+
                       navegarA("perfil");
                     }}
                   >
@@ -444,7 +608,6 @@ function App() {
                 </>
               )}
 
-              {/* MENÚ PARA EMPRESA */}
               {esEmpresa && (
                 <Nav.Link
                   active={
@@ -453,14 +616,16 @@ function App() {
                   }
                   onClick={(event) => {
                     event.preventDefault();
-                    navegarA("perfil-empresa");
+
+                    navegarA(
+                      "perfil-empresa"
+                    );
                   }}
                 >
                   Perfil Empresa
                 </Nav.Link>
               )}
 
-              {/* MENÚ PARA ADMINISTRADOR */}
               {esAdmin && (
                 <Nav.Link
                   active={
@@ -469,7 +634,10 @@ function App() {
                   }
                   onClick={(event) => {
                     event.preventDefault();
-                    navegarA("panel-admin");
+
+                    navegarA(
+                      "panel-admin"
+                    );
                   }}
                 >
                   Panel Administrativo
@@ -497,7 +665,7 @@ function App() {
               size="sm"
               onClick={handleLogout}
             >
-              Cerrar Sesión
+              Cerrar sesión
             </Button>
           </Navbar.Collapse>
         </Container>
