@@ -1,198 +1,364 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
+
 import { Login } from "./pages/Login.jsx";
 import { Dashboard } from "./pages/Dashboard.jsx";
 import { BolsaTrabajo } from "./pages/BolsaTrabajo.jsx";
 import { Perfil } from "./pages/Perfil.jsx";
 import { Postulaciones } from "./pages/Postulaciones.jsx";
 import { PerfilEmpresa } from "./pages/PerfilEmpresa.jsx";
+import { PanelAdmin } from "./pages/PanelAdmin.jsx";
+
 import "./styles.css";
 
 function App() {
-  const vistasPermitidas = ["dashboard", "bolsa", "perfil", "postulaciones", "perfil-empresa"];
-  const vistasEstudiante = ["dashboard", "bolsa", "perfil", "postulaciones"];
+  const vistasPermitidas = [
+    "dashboard",
+    "bolsa",
+    "perfil",
+    "postulaciones",
+    "perfil-empresa",
+    "panel-admin"
+  ];
 
-  // Lee la URL actual para saber en qué vista iniciar
+  const vistasEstudiante = [
+    "dashboard",
+    "bolsa",
+    "perfil",
+    "postulaciones"
+  ];
+
+  // Lee la URL actual para determinar la vista inicial.
   const obtenerVistaInicial = () => {
     const path = window.location.pathname.replace("/", "");
 
-    return vistasPermitidas.includes(path) ? path : "dashboard";
+    return vistasPermitidas.includes(path)
+      ? path
+      : "dashboard";
   };
 
+  /*
+   * Se conserva el nombre "estudiante" para no romper el flujo existente.
+   * Esta variable puede almacenar temporalmente estudiantes,
+   * empresas o administradores.
+   */
   const [estudiante, setEstudiante] = useState(null);
-  const [vistaActual, setVistaActual] = useState(obtenerVistaInicial());
+  const [vistaActual, setVistaActual] = useState(
+    obtenerVistaInicial()
+  );
+
+  // Define la pantalla principal correspondiente a cada rol.
+  const obtenerVistaPorRol = (usuario) => {
+    if (usuario?.rol === "admin") {
+      return "panel-admin";
+    }
+
+    if (usuario?.rol === "empresa") {
+      return "perfil-empresa";
+    }
+
+    return "dashboard";
+  };
+
+  // Determina si un usuario puede acceder a una vista.
+  const vistaPermitidaParaUsuario = (usuario, vista) => {
+    if (usuario?.rol === "admin") {
+      return vista === "panel-admin";
+    }
+
+    if (usuario?.rol === "empresa") {
+      return vista === "perfil-empresa";
+    }
+
+    return vistasEstudiante.includes(vista);
+  };
+
+  // Cambia la vista y actualiza la URL.
+  const redirigirAVista = (
+    nuevaVista,
+    metodo = "replace"
+  ) => {
+    setVistaActual(nuevaVista);
+
+    const estado = { vista: nuevaVista };
+    const ruta = `/${nuevaVista}`;
+
+    if (metodo === "push") {
+      window.history.pushState(estado, "", ruta);
+    } else {
+      window.history.replaceState(estado, "", ruta);
+    }
+  };
 
   useEffect(() => {
-    const estudianteGuardado = localStorage.getItem("estudiante");
+    const usuarioGuardado =
+      localStorage.getItem("estudiante");
 
-    if (estudianteGuardado) {
+    if (usuarioGuardado) {
       try {
-        const usuario = JSON.parse(estudianteGuardado);
+        const usuario = JSON.parse(usuarioGuardado);
+
         setEstudiante(usuario);
 
         const vistaInicial = obtenerVistaInicial();
 
-        // Si es empresa y está intentando entrar a una vista de estudiante,
-        // se redirige a Perfil Empresa.
-        if (usuario.rol === "empresa" && vistasEstudiante.includes(vistaInicial)) {
-          setVistaActual("perfil-empresa");
-          window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+        if (
+          vistaPermitidaParaUsuario(
+            usuario,
+            vistaInicial
+          )
+        ) {
+          setVistaActual(vistaInicial);
+        } else {
+          redirigirAVista(
+            obtenerVistaPorRol(usuario)
+          );
         }
-
-        // Si es estudiante e intenta entrar a Perfil Empresa,
-        // se redirige al dashboard.
-        if (usuario.rol !== "empresa" && vistaInicial === "perfil-empresa") {
-          setVistaActual("dashboard");
-          window.history.replaceState({ vista: "dashboard" }, "", "/dashboard");
-        }
-
       } catch (error) {
-        console.error("Error al leer usuario guardado:", error);
+        console.error(
+          "Error al leer el usuario guardado:",
+          error
+        );
+
         localStorage.removeItem("estudiante");
         setEstudiante(null);
         setVistaActual("dashboard");
       }
     }
 
-    // Escucha los botones Atrás / Adelante del navegador
+    // Controla los botones Atrás y Adelante del navegador.
     const manejarBotonNavegador = (evento) => {
-      const vistaSolicitada = evento.state?.vista || obtenerVistaInicial();
-      const usuarioGuardado = localStorage.getItem("estudiante");
+      const usuarioAlmacenado =
+        localStorage.getItem("estudiante");
 
-      if (!usuarioGuardado) {
+      if (!usuarioAlmacenado) {
         setVistaActual("dashboard");
         return;
       }
 
-      const usuario = JSON.parse(usuarioGuardado);
+      try {
+        const usuario = JSON.parse(
+          usuarioAlmacenado
+        );
 
-      if (usuario.rol === "empresa" && vistaSolicitada !== "perfil-empresa") {
-        setVistaActual("perfil-empresa");
-        window.history.replaceState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
-        return;
-      }
+        const vistaSolicitada =
+          evento.state?.vista ||
+          obtenerVistaInicial();
 
-      if (usuario.rol !== "empresa" && vistaSolicitada === "perfil-empresa") {
+        if (
+          vistaPermitidaParaUsuario(
+            usuario,
+            vistaSolicitada
+          )
+        ) {
+          setVistaActual(vistaSolicitada);
+        } else {
+          redirigirAVista(
+            obtenerVistaPorRol(usuario)
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Error al validar la navegación:",
+          error
+        );
+
+        localStorage.removeItem("estudiante");
+        setEstudiante(null);
         setVistaActual("dashboard");
-        window.history.replaceState({ vista: "dashboard" }, "", "/dashboard");
-        return;
       }
-
-      setVistaActual(vistaSolicitada);
     };
 
-    window.addEventListener("popstate", manejarBotonNavegador);
+    window.addEventListener(
+      "popstate",
+      manejarBotonNavegador
+    );
 
-    return () => window.removeEventListener("popstate", manejarBotonNavegador);
+    return () => {
+      window.removeEventListener(
+        "popstate",
+        manejarBotonNavegador
+      );
+    };
   }, []);
 
-  // Cambia de vista y actualiza la URL
+  // Navegación interna con validación por rol.
   const navegarA = (nuevaVista) => {
     if (!estudiante) {
-      setVistaActual("dashboard");
-      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
+      redirigirAVista("dashboard", "push");
       return;
     }
 
-    const esEmpresa = estudiante.rol === "empresa";
-
-    // Bloqueo básico por rol
-    if (esEmpresa && nuevaVista !== "perfil-empresa") {
-      setVistaActual("perfil-empresa");
-      window.history.pushState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
+    if (
+      !vistaPermitidaParaUsuario(
+        estudiante,
+        nuevaVista
+      )
+    ) {
+      redirigirAVista(
+        obtenerVistaPorRol(estudiante),
+        "push"
+      );
       return;
     }
 
-    if (!esEmpresa && nuevaVista === "perfil-empresa") {
-      setVistaActual("dashboard");
-      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
-      return;
-    }
-
-    setVistaActual(nuevaVista);
-    window.history.pushState({ vista: nuevaVista }, "", `/${nuevaVista}`);
+    redirigirAVista(nuevaVista, "push");
   };
 
-  // Permite que PerfilEmpresa actualice el usuario en memoria y localStorage
-  const actualizarUsuarioActual = (usuarioActualizado) => {
+  // Permite actualizar los datos del usuario actual.
+  const actualizarUsuarioActual = (
+    usuarioActualizado
+  ) => {
     setEstudiante(usuarioActualizado);
-    localStorage.setItem("estudiante", JSON.stringify(usuarioActualizado));
+
+    localStorage.setItem(
+      "estudiante",
+      JSON.stringify(usuarioActualizado)
+    );
   };
 
-  // Inicio de sesión con redirección según rol
-  const handleLoginSuccess = (datosEstudiante) => {
-    setEstudiante(datosEstudiante);
+  // Redirección después del login según el rol.
+  const handleLoginSuccess = (usuario) => {
+    setEstudiante(usuario);
 
-    if (datosEstudiante.rol === "empresa") {
-      setVistaActual("perfil-empresa");
-      window.history.pushState({ vista: "perfil-empresa" }, "", "/perfil-empresa");
-    } else {
-      setVistaActual("dashboard");
-      window.history.pushState({ vista: "dashboard" }, "", "/dashboard");
-    }
+    const vistaDestino =
+      obtenerVistaPorRol(usuario);
+
+    redirigirAVista(
+      vistaDestino,
+      "push"
+    );
   };
 
   const handleLogout = () => {
     localStorage.removeItem("estudiante");
+
     setEstudiante(null);
     setVistaActual("dashboard");
-    window.history.pushState({ vista: "login" }, "", "/login");
+
+    window.history.pushState(
+      { vista: "login" },
+      "",
+      "/login"
+    );
+
     document.body.className = "login-body";
   };
 
   if (!estudiante) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
   }
 
-  const esEmpresa = estudiante.rol === "empresa";
+  const esEmpresa =
+    estudiante.rol === "empresa";
+
+  const esAdmin =
+    estudiante.rol === "admin";
+
+  const esEstudiante =
+    !esEmpresa && !esAdmin;
+
+  const obtenerNombreRol = () => {
+    if (esAdmin) {
+      return "Administrador";
+    }
+
+    if (esEmpresa) {
+      return "Empresa";
+    }
+
+    return "Estudiante";
+  };
 
   const renderPerfilEmpresa = () => (
     <PerfilEmpresa
       estudiante={estudiante}
       alCambiarVista={navegarA}
-      onActualizarUsuario={actualizarUsuarioActual}
+      onActualizarUsuario={
+        actualizarUsuarioActual
+      }
     />
   );
 
   const renderVista = () => {
-    // Seguridad básica frontend:
-    // empresa solo puede ver Perfil Empresa
+    // El administrador solo puede visualizar su panel.
+    if (esAdmin) {
+      return <PanelAdmin />;
+    }
+
+    // La empresa solo puede visualizar su perfil.
     if (esEmpresa) {
       return renderPerfilEmpresa();
     }
 
-    // estudiante no puede ver Perfil Empresa
-    if (!esEmpresa && vistaActual === "perfil-empresa") {
-      return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
-    }
-
+    // Flujo correspondiente al estudiante.
     switch (vistaActual) {
       case "dashboard":
-        return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
+        return (
+          <Dashboard
+            estudiante={estudiante}
+            alCambiarVista={navegarA}
+          />
+        );
 
       case "bolsa":
-        return <BolsaTrabajo estudiante={estudiante} alCambiarVista={navegarA} />;
+        return (
+          <BolsaTrabajo
+            estudiante={estudiante}
+            alCambiarVista={navegarA}
+          />
+        );
 
       case "perfil":
-        return <Perfil estudiante={estudiante} alCambiarVista={navegarA} />;
+        return (
+          <Perfil
+            estudiante={estudiante}
+            alCambiarVista={navegarA}
+          />
+        );
 
       case "postulaciones":
-        return <Postulaciones estudiante={estudiante} alCambiarVista={navegarA} />;
+        return (
+          <Postulaciones
+            estudiante={estudiante}
+            alCambiarVista={navegarA}
+          />
+        );
 
       default:
-        return <Dashboard estudiante={estudiante} alCambiarVista={navegarA} />;
+        return (
+          <Dashboard
+            estudiante={estudiante}
+            alCambiarVista={navegarA}
+          />
+        );
     }
   };
 
+  const vistaPrincipal = esAdmin
+    ? "panel-admin"
+    : esEmpresa
+      ? "perfil-empresa"
+      : "dashboard";
+
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm mb-4">
+      <Navbar
+        bg="dark"
+        variant="dark"
+        expand="lg"
+        className="shadow-sm mb-4"
+      >
         <Container>
           <Navbar.Brand
             href="#home"
-            onClick={(e) => {
-              e.preventDefault();
-              navegarA(esEmpresa ? "perfil-empresa" : "dashboard");
+            onClick={(event) => {
+              event.preventDefault();
+              navegarA(vistaPrincipal);
             }}
             className="d-flex align-items-center"
             style={{ cursor: "pointer" }}
@@ -203,25 +369,36 @@ function App() {
               height="35"
               className="d-inline-block align-top me-2"
               alt="UNMSM Logo"
-              style={{ mixBlendMode: "lighten" }}
+              style={{
+                mixBlendMode: "lighten"
+              }}
             />
 
-            <span style={{ fontSize: "0.95rem", fontWeight: "600" }}>
+            <span
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: "600"
+              }}
+            >
               Empleabilidad UNMSM
             </span>
           </Navbar.Brand>
 
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Toggle
+            aria-controls="basic-navbar-nav"
+          />
 
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto ms-3">
               {/* MENÚ PARA ESTUDIANTE */}
-              {!esEmpresa && (
+              {esEstudiante && (
                 <>
                   <Nav.Link
-                    active={vistaActual === "dashboard"}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    active={
+                      vistaActual === "dashboard"
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
                       navegarA("dashboard");
                     }}
                   >
@@ -229,9 +406,11 @@ function App() {
                   </Nav.Link>
 
                   <Nav.Link
-                    active={vistaActual === "bolsa"}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    active={
+                      vistaActual === "bolsa"
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
                       navegarA("bolsa");
                     }}
                   >
@@ -239,9 +418,12 @@ function App() {
                   </Nav.Link>
 
                   <Nav.Link
-                    active={vistaActual === "postulaciones"}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    active={
+                      vistaActual ===
+                      "postulaciones"
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
                       navegarA("postulaciones");
                     }}
                   >
@@ -249,9 +431,11 @@ function App() {
                   </Nav.Link>
 
                   <Nav.Link
-                    active={vistaActual === "perfil"}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    active={
+                      vistaActual === "perfil"
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
                       navegarA("perfil");
                     }}
                   >
@@ -263,28 +447,56 @@ function App() {
               {/* MENÚ PARA EMPRESA */}
               {esEmpresa && (
                 <Nav.Link
-                  active={vistaActual === "perfil-empresa"}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  active={
+                    vistaActual ===
+                    "perfil-empresa"
+                  }
+                  onClick={(event) => {
+                    event.preventDefault();
                     navegarA("perfil-empresa");
                   }}
                 >
                   Perfil Empresa
                 </Nav.Link>
               )}
+
+              {/* MENÚ PARA ADMINISTRADOR */}
+              {esAdmin && (
+                <Nav.Link
+                  active={
+                    vistaActual ===
+                    "panel-admin"
+                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navegarA("panel-admin");
+                  }}
+                >
+                  Panel Administrativo
+                </Nav.Link>
+              )}
             </Nav>
 
             <Navbar.Text
               className="me-3 text-light d-none d-md-inline"
-              style={{ fontSize: "0.85rem" }}
+              style={{
+                fontSize: "0.85rem"
+              }}
             >
-              Conectado como: <strong>{estudiante.nombre}</strong>{" "}
+              Conectado como:{" "}
+              <strong>
+                {estudiante.nombre}
+              </strong>{" "}
               <span className="text-warning">
-                ({esEmpresa ? "Empresa" : "Estudiante"})
+                ({obtenerNombreRol()})
               </span>
             </Navbar.Text>
 
-            <Button variant="outline-light" size="sm" onClick={handleLogout}>
+            <Button
+              variant="outline-light"
+              size="sm"
+              onClick={handleLogout}
+            >
               Cerrar Sesión
             </Button>
           </Navbar.Collapse>
