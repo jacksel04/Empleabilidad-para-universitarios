@@ -1,53 +1,102 @@
-import express from 'express';
-import cors from 'cors';
-import proxy from 'express-http-proxy';
-import 'dotenv/config';
+import express from "express";
+import cors from "cors";
+import proxy from "express-http-proxy";
+import "dotenv/config";
 
 const app = express();
 
-// Puerto dinámico para Render o 3000 local
+// Puerto dinámico para Render o puerto 3000 en local.
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
+// Conserva la ruta original recibida por el Gateway.
 const proxyOptions = {
   proxyReqPathResolver: (req) => {
     return req.originalUrl;
   }
 };
 
-// URLs de microservicios
-// En local puedes sobrescribirlas con .env
-// En producción usará Render por defecto
+// ===============================
+// URLS DE LOS MICROSERVICIOS
+// ===============================
+
+// En desarrollo local se sobrescriben mediante el archivo .env.
+// En producción se utilizan las direcciones de Render.
 const USUARIOS_SERVICE_URL =
-  process.env.USUARIOS_SERVICE_URL || 'https://servicio-usuarios-empleabilidad.onrender.com';
+  process.env.USUARIOS_SERVICE_URL ||
+  "https://servicio-usuarios-empleabilidad.onrender.com";
 
 const OFERTAS_SERVICE_URL =
-  process.env.OFERTAS_SERVICE_URL || 'https://servicio-ofertas-empleabilidad.onrender.com';
+  process.env.OFERTAS_SERVICE_URL ||
+  "https://servicio-ofertas-empleabilidad.onrender.com";
 
 const POSTULACIONES_SERVICE_URL =
-  process.env.POSTULACIONES_SERVICE_URL || 'https://servicio-postulaciones-empleabilidad.onrender.com';
+  process.env.POSTULACIONES_SERVICE_URL ||
+  "https://servicio-postulaciones-empleabilidad.onrender.com";
 
 const BI_SERVICE_URL =
-  process.env.BI_SERVICE_URL || 'https://servicio-bi-empleabilidad.onrender.com';
+  process.env.BI_SERVICE_URL ||
+  "https://servicio-bi-empleabilidad.onrender.com";
 
-// --- MICROSERVICIO DE USUARIOS ---
-app.use('/api/estudiantes', proxy(USUARIOS_SERVICE_URL, proxyOptions));
-app.use('/api/usuarios', proxy(USUARIOS_SERVICE_URL, proxyOptions));
+// ===============================
+// MICROSERVICIO DE USUARIOS
+// ===============================
 
-// --- NUEVA RUTA: PERFIL DE EMPRESA ---
-app.use('/api/empresas', proxy(USUARIOS_SERVICE_URL, proxyOptions));
+app.use(
+  "/api/estudiantes",
+  proxy(USUARIOS_SERVICE_URL, proxyOptions)
+);
 
-// --- MICROSERVICIO DE OFERTAS ---
-app.use('/api/ofertas', proxy(OFERTAS_SERVICE_URL, proxyOptions));
+app.use(
+  "/api/usuarios",
+  proxy(USUARIOS_SERVICE_URL, proxyOptions)
+);
 
-// --- MICROSERVICIO DE POSTULACIONES ---
-app.use('/api/postular', proxy(POSTULACIONES_SERVICE_URL, proxyOptions));
-app.use('/api/postulaciones', proxy(POSTULACIONES_SERVICE_URL, proxyOptions));
+app.use(
+  "/api/empresas",
+  proxy(USUARIOS_SERVICE_URL, proxyOptions)
+);
 
-// --- MICROSERVICIO BI ---
-app.use('/api/estadisticas', proxy(BI_SERVICE_URL, proxyOptions));
+app.use(
+  "/api/administradores",
+  proxy(USUARIOS_SERVICE_URL, proxyOptions)
+);
+
+// ===============================
+// MICROSERVICIO DE OFERTAS
+// ===============================
+
+app.use(
+  "/api/ofertas",
+  proxy(OFERTAS_SERVICE_URL, proxyOptions)
+);
+
+// ===============================
+// MICROSERVICIO DE POSTULACIONES
+// ===============================
+
+app.use(
+  "/api/postular",
+  proxy(POSTULACIONES_SERVICE_URL, proxyOptions)
+);
+
+app.use(
+  "/api/postulaciones",
+  proxy(POSTULACIONES_SERVICE_URL, proxyOptions)
+);
+
+// ===============================
+// MICROSERVICIO BI
+// ===============================
+
+app.use(
+  "/api/estadisticas",
+  proxy(BI_SERVICE_URL, proxyOptions)
+);
 
 app.listen(PORT, () => {
-  console.log(`[API Gateway] Escuchando en el puerto ${PORT}`);
+  console.log(
+    `[API Gateway] Escuchando en el puerto ${PORT}`
+  );
 });
