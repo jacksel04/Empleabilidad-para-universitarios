@@ -1,33 +1,60 @@
+// ===============================
+// MODELO DE ESTUDIANTES
+// ===============================
+
 export const registrarEstudiante = async (supabase, datos) => {
-  return await supabase.from('estudiantes').insert([datos]);
+  return await supabase
+    .from("estudiantes")
+    .insert([datos]);
 };
 
 export const obtenerTodosEstudiantes = async (supabase) => {
-  return await supabase.from('estudiantes').select('*');
+  return await supabase
+    .from("estudiantes")
+    .select("*");
 };
 
-export const actualizarEstudiante = async (supabase, id, datos) => {
-  return await supabase.from('estudiantes').update(datos).eq('id', id);
+export const actualizarEstudiante = async (
+  supabase,
+  id,
+  datos
+) => {
+  return await supabase
+    .from("estudiantes")
+    .update(datos)
+    .eq("id", id);
 };
 
-export const eliminarEstudiante = async (supabase, id) => {
-  return await supabase.from('estudiantes').delete().eq('id', id);
+export const eliminarEstudiante = async (
+  supabase,
+  id
+) => {
+  return await supabase
+    .from("estudiantes")
+    .delete()
+    .eq("id", id);
 };
 
-export const subirCVSupabase = async (supabase, fileBuffer, fileName) => {
-  // 1. Subir el archivo al bucket 'curriculums'
-  const { data, error } = await supabase.storage
-    .from('curriculums')
+export const subirCVSupabase = async (
+  supabase,
+  fileBuffer,
+  fileName
+) => {
+  // Subir el archivo al bucket "curriculums".
+  const { error } = await supabase.storage
+    .from("curriculums")
     .upload(`cvs/${fileName}`, fileBuffer, {
-      contentType: 'application/pdf',
+      contentType: "application/pdf",
       upsert: true
     });
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  // 2. Obtener la URL pública del archivo recién subido
+  // Obtener la URL pública del archivo.
   const { data: publicUrlData } = supabase.storage
-    .from('curriculums')
+    .from("curriculums")
     .getPublicUrl(`cvs/${fileName}`);
 
   return publicUrlData.publicUrl;
@@ -38,7 +65,7 @@ export const subirCVSupabase = async (supabase, fileBuffer, fileName) => {
 // ===============================
 
 // Columnas públicas de empresa.
-// No se incluye password por seguridad.
+// No se devuelve la contraseña.
 const columnasEmpresaPublicas = `
   id,
   nombre_empresa,
@@ -55,22 +82,57 @@ const columnasEmpresaPublicas = `
 
 export const obtenerEmpresas = async (supabase) => {
   return await supabase
-    .from('empresas')
+    .from("empresas")
     .select(columnasEmpresaPublicas)
-    .order('created_at', { ascending: false });
+    .order("created_at", {
+      ascending: false
+    });
 };
 
-export const crearEmpresa = async (supabase, datos) => {
+export const crearEmpresa = async (
+  supabase,
+  datos
+) => {
   return await supabase
-    .from('empresas')
+    .from("empresas")
     .insert([datos])
     .select(columnasEmpresaPublicas);
 };
 
-export const actualizarEmpresa = async (supabase, id, datos) => {
+export const actualizarEmpresa = async (
+  supabase,
+  id,
+  datos
+) => {
   return await supabase
-    .from('empresas')
+    .from("empresas")
     .update(datos)
-    .eq('id', id)
+    .eq("id", id)
     .select(columnasEmpresaPublicas);
+};
+
+// ===============================
+// MODELO DE ADMINISTRADORES
+// ===============================
+
+export const autenticarAdministrador = async (
+  supabase,
+  correo,
+  password
+) => {
+  const { data, error } = await supabase.rpc(
+    "login_administrador",
+    {
+      p_correo: correo,
+      p_password: password
+    }
+  );
+
+  return {
+    data:
+      Array.isArray(data) && data.length > 0
+        ? data[0]
+        : null,
+    error
+  };
 };
