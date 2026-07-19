@@ -139,6 +139,7 @@ app.put(
   upload.single("cv"),
   async (req, res) => {
     try {
+      console.log("Datos recibidos en el microservicio:", req.body);
       const { id, telefono, ciclo, carrera, habilidades, intereses_laborales } = req.body;
 
       const datosActualizar = {
