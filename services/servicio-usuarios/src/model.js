@@ -22,7 +22,8 @@ export const actualizarEstudiante = async (
   return await supabase
     .from("estudiantes")
     .update(datos)
-    .eq("id", id);
+    .eq("id", Number(id))
+    .select();
 };
 
 export const eliminarEstudiante = async (
