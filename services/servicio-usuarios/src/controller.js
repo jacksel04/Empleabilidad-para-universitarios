@@ -139,13 +139,15 @@ app.put(
   upload.single("cv"),
   async (req, res) => {
     try {
-      const { id, telefono, ciclo } = req.body;
+      const { id, telefono, ciclo, habilidades, intereses_laborales } = req.body;
 
       const datosActualizar = {
         telefono,
-        ciclo
+        ciclo,
+        habilidades,
+        intereses_laborales
       };
-
+      
       if (req.file) {
         const fileName = `estudiante_${id}_cv.pdf`;
 
