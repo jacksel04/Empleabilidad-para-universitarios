@@ -7,6 +7,7 @@ export const Perfil = ({ estudiante }) => {
   // Estados para los campos editables
   const [telefono, setTelefono] = useState(estudiante.telefono || "");
   const [ciclo, setCiclo] = useState(estudiante.ciclo || "");
+  const [carrera, setCarrera] = useState(estudiante.carrera || "");
   const [archivoCV, setArchivoCV] = useState(null);
   
   // Estado para habilidades
@@ -44,6 +45,7 @@ export const Perfil = ({ estudiante }) => {
       formData.append("id", estudiante.id);
       formData.append("telefono", telefono);
       formData.append("ciclo", ciclo);
+      formData.append("carrera", carrera);
       formData.append("habilidades", habilidades);
       formData.append("intereses_laborales", interesesLaborales);
       if (archivoCV) {
@@ -162,6 +164,16 @@ export const Perfil = ({ estudiante }) => {
                 </Form.Group>
               </Row>
 
+              <Form.Group className="mb-4" controlId="formGridCarrera">
+                <Form.Label className="fw-semibold text-secondary">Carrera Profesional</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  value={carrera} 
+                  onChange={(e) => setCarrera(e.target.value)} 
+                  placeholder="Ej: Ingeniería de Sistemas, Administración..." 
+                />
+              </Form.Group>
+              
               <Form.Group className="mb-4" controlId="formGridHabilidades">
                 <Form.Label className="fw-semibold text-secondary">Mis Habilidades Técnicas</Form.Label>
                 <Form.Control 
