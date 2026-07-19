@@ -168,7 +168,7 @@ app.put(
           id,
           datosActualizar
         );
-
+      console.log("Respuesta de Supabase -> Data:", data, "Error:", error);
       if (error) {
         return res.status(500).json({
           error: error.message
