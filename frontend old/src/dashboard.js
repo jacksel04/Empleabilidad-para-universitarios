@@ -2,13 +2,12 @@ const datosUsuario = document.getElementById("datosUsuario");
 const ofertasContenedor = document.getElementById("ofertas");
 const mensaje = document.getElementById("mensaje");
 const cerrarSesion = document.getElementById("cerrarSesion");
-
 const contadorOfertas = document.getElementById("contadorOfertas");
 const totalOfertas = document.getElementById("totalOfertas");
 const ofertasActivas = document.getElementById("ofertasActivas");
 const totalPostulaciones = document.getElementById("totalPostulaciones");
-
 const estudiante = JSON.parse(localStorage.getItem("estudiante"));
+const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
 
 if (!estudiante) {
   window.location.href = "index.html";
@@ -20,7 +19,7 @@ if (!estudiante) {
 
 async function cargarOfertas() {
   try {
-    const response = await fetch("/api/ofertas");
+    const response = await fetch(`${API_BASE_URL}/api/ofertas`);
 
     if (!response.ok) {
       throw new Error("No se pudieron cargar las ofertas.");
@@ -86,7 +85,7 @@ async function cargarOfertas() {
 
 async function cargarEstadisticas() {
   try {
-    const response = await fetch("/api/estadisticas");
+    const response = await fetch(`${API_BASE_URL}/api/estadisticas`);
 
     if (!response.ok) {
       totalPostulaciones.textContent = "-";
@@ -108,7 +107,7 @@ async function postular(ofertaId) {
   try {
     limpiarMensaje();
 
-    const response = await fetch("/api/postular", {
+    const response = await fetch(`${API_BASE_URL}/api/postular`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

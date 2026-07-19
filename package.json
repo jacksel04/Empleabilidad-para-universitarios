@@ -1,18 +1,13 @@
 {
-  "name": "api-empleabilidad",
-  "type": "module",
+  "name": "api-empleabilidad-monorepo",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "services/*"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.105.1",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1"
   }
 }

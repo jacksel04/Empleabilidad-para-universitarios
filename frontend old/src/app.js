@@ -1,3 +1,5 @@
+const API_BASE_URL = "https://empleabilidad-para-universitarios.onrender.com";
+
 const form = document.getElementById("loginForm");
 const correoInput = document.getElementById("correo");
 const passwordInput = document.getElementById("password");
@@ -7,6 +9,7 @@ const successMessage = document.getElementById("successMessage");
 const passwordToggle = document.getElementById("passwordToggle");
 const signinButton = document.querySelector(".signin-button");
 const loginForm = document.querySelector(".login-form");
+
 
 passwordToggle.addEventListener("click", () => {
   const isPassword = passwordInput.type === "password";
@@ -43,7 +46,7 @@ form.addEventListener("submit", async (event) => {
     signinButton.classList.add("loading");
     signinButton.disabled = true;
 
-    const response = await fetch("/api/estudiantes");
+    const response = await fetch(`${API_BASE_URL}/api/estudiantes`);
 
     if (!response.ok) {
       throw new Error("No se pudo obtener la lista de estudiantes.");

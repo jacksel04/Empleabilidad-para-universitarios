@@ -3,7 +3,7 @@ export const obtenerTodasOfertas = async (supabase) => {
 };
 
 export const crearOferta = async (supabase, datos) => {
-  return await supabase.from('ofertas').insert([datos]);
+  return await supabase.from('ofertas').insert([datos]).select();
 };
 
 export const actualizarOferta = async (supabase, id, datos) => {

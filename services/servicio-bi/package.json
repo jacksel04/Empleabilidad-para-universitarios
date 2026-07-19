@@ -1,0 +1,16 @@
+{
+  "name": "servicio-bi",
+  "version": "1.0.0",
+  "description": "Microservicio de inteligencia de negocios de Conecta SM",
+  "type": "module",
+  "main": "src/controller.js",
+  "scripts": {
+    "start": "node src/controller.js",
+    "dev": "node --watch src/controller.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
+  }
+}
