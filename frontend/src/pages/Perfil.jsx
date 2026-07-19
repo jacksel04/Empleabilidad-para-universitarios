@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Container, Card, Row, Col, Badge, Button, Form, Alert, Spinner } from "react-bootstrap";
+import { Container, Card, Row, Col, Badge, Button, Form, Alert, Spinner, ListGroup } from "react-bootstrap";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -9,16 +9,25 @@ export const Perfil = ({ estudiante }) => {
   const [ciclo, setCiclo] = useState(estudiante.ciclo || "");
   const [archivoCV, setArchivoCV] = useState(null);
   
+  // Estado para habilidades
+  const [habilidades, setHabilidades] = useState(estudiante.habilidades || ""); 
+  const [interesesLaborales, setInteresesLaborales] = useState(estudiante.intereses_laborales || "");
+  
   // Estados de la interfaz
   const [cargando, setCargando] = useState(false);
   const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
+
+  // --- NUEVO: ESTADOS PARA LA BRÚJULA IA ---
+  const [cargandoIA, setCargandoIA] = useState(false);
+  const [brujulaData, setBrujulaData] = useState(null);
+  const [errorIA, setErrorIA] = useState("");
 
   const handleArchivoChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type !== "application/pdf") {
       setNotificacion({ texto: "El archivo debe ser un PDF válido.", tipo: "danger" });
       setArchivoCV(null);
-      e.target.value = null; // Resetea el input
+      e.target.value = null; 
     } else {
       setArchivoCV(file);
     }
@@ -31,19 +40,18 @@ export const Perfil = ({ estudiante }) => {
       setCargando(true);
       setNotificacion({ texto: "", tipo: "" });
 
-      // Usamos FormData porque estamos enviando un archivo PDF mezclado con texto
       const formData = new FormData();
       formData.append("id", estudiante.id);
       formData.append("telefono", telefono);
       formData.append("ciclo", ciclo);
+      formData.append("habilidades", habilidades);
+      formData.append("intereses_laborales", interesesLaborales);
       if (archivoCV) {
-        formData.append("cv", archivoCV); // "cv" es el nombre que espera multer en el backend
+        formData.append("cv", archivoCV);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/estudiantes`, {
         method: "PUT",
-        // OJO: Al usar FormData con fetch, NO se debe enviar el header 'Content-Type'. 
-        // El navegador lo genera automáticamente con los boundaries correctos.
         body: formData
       });
 
@@ -52,14 +60,45 @@ export const Perfil = ({ estudiante }) => {
       if (!response.ok) throw new Error(data.error || "Error al actualizar el perfil.");
 
       setNotificacion({ texto: "¡Perfil y CV actualizados exitosamente!", tipo: "success" });
-      setArchivoCV(null); // Limpiamos el archivo subido de la memoria visual
-
-      // Opcional: Aquí podrías actualizar el objeto 'estudiante' global si manejas un contexto
+      setArchivoCV(null); 
       
     } catch (error) {
       setNotificacion({ texto: error.message, tipo: "danger" });
     } finally {
       setCargando(false);
+    }
+  };
+
+  // --- NUEVO: FUNCIÓN PARA LLAMAR AL SERVICIO DE IA ---
+  const handleAnalisisIA = async () => {
+    if (!estudiante.carrera) {
+      setErrorIA("Tu perfil debe tener una carrera asignada para realizar el análisis de mercado.");
+      return;
+    }
+
+    try {
+      setCargandoIA(true);
+      setErrorIA("");
+      
+      const response = await fetch(`${API_BASE_URL}/api/ia/brujula`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carrera: estudiante.carrera,
+          habilidades_estudiante: habilidades // Le mandamos lo que tenga escrito, incluso si es poco
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Error al conectar con la IA.");
+
+      setBrujulaData(data);
+
+    } catch (error) {
+      setErrorIA(error.message);
+    } finally {
+      setCargandoIA(false);
     }
   };
 
@@ -78,13 +117,13 @@ export const Perfil = ({ estudiante }) => {
 
       <Row className="g-4">
         <Col xs={12} lg={8}>
-          <Card className="shadow-sm border-0 p-4 bg-white">
+          {/* TARJETA 1: DATOS DEL ESTUDIANTE */}
+          <Card className="shadow-sm border-0 p-4 bg-white mb-4">
             <h5 className="fw-bold text-dark mb-4">Datos del Estudiante</h5>
             <Form>
               <Row className="mb-3">
                 <Form.Group as={Col} controlId="formGridNombre">
                   <Form.Label className="fw-semibold text-secondary">Nombre Completo</Form.Label>
-                  {/* Nombre y correo suelen estar bloqueados para no romper la identidad en BD */}
                   <Form.Control type="text" defaultValue={estudiante.nombre} disabled />
                 </Form.Group>
               </Row>
@@ -101,7 +140,6 @@ export const Perfil = ({ estudiante }) => {
                 </Form.Group>
               </Row>
 
-              {/* CAMPOS EDITABLES */}
               <Row className="mb-4 g-3">
                 <Form.Group as={Col} xs={12} md={6} controlId="formGridTelefono">
                   <Form.Label className="fw-semibold text-secondary">Teléfono</Form.Label>
@@ -124,12 +162,31 @@ export const Perfil = ({ estudiante }) => {
                 </Form.Group>
               </Row>
 
+              <Form.Group className="mb-4" controlId="formGridHabilidades">
+                <Form.Label className="fw-semibold text-secondary">Mis Habilidades Técnicas</Form.Label>
+                <Form.Control 
+                  as="textarea" 
+                  rows={2} 
+                  value={habilidades} 
+                  onChange={(e) => setHabilidades(e.target.value)} 
+                  placeholder="Ej: Java, React, SQL, Metodologías Ágiles" 
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-4" controlId="formGridIntereses">
+                <Form.Label className="fw-semibold text-secondary">Mis Intereses Laborales</Form.Label>
+                <Form.Control 
+                  as="textarea" 
+                  rows={2} 
+                  value={interesesLaborales} 
+                  onChange={(e) => setInteresesLaborales(e.target.value)} 
+                  placeholder="Ej: Desarrollo Backend, Ciencia de Datos, Gestión de Proyectos" 
+                />
+              </Form.Group>
+
               <Form.Group className="mb-4" controlId="formGridCV">
                 <Form.Label className="fw-semibold text-secondary">Actualizar Curriculum Vitae (PDF)</Form.Label>
                 <Form.Control type="file" accept=".pdf" onChange={handleArchivoChange} />
-                <Form.Text className="text-muted d-block mt-2">
-                  Sube tu CV actualizado. Este archivo será visible para las empresas en la bolsa de trabajo.
-                </Form.Text>
               </Form.Group>
 
               <Button 
@@ -143,7 +200,6 @@ export const Perfil = ({ estudiante }) => {
                 ) : "Guardar Cambios"}
               </Button>
 
-              {/* Si ya tiene un CV subido anteriormente, le damos un botón para verlo */}
               {estudiante.cv_url && (
                 <Button 
                   variant="outline-secondary" 
@@ -157,8 +213,53 @@ export const Perfil = ({ estudiante }) => {
               )}
             </Form>
           </Card>
+
+          {/* --- NUEVO: SECCIÓN BRÚJULA IA --- */}
+          <Card className="shadow-sm border-0 p-4 bg-white border-top border-primary border-4">
+            <div className="d-flex align-items-center mb-3">
+              <span style={{ fontSize: "2rem", marginRight: "15px" }}>🤖</span>
+              <div>
+                <h5 className="fw-bold text-dark mb-0">Brújula del Mercado Estudiantil</h5>
+                <p className="text-muted mb-0" style={{ fontSize: "0.9rem" }}>Nuestra IA analiza las ofertas actuales de tu carrera y te recomienda qué aprender.</p>
+              </div>
+            </div>
+
+            <Button 
+              variant="dark" 
+              onClick={handleAnalisisIA}
+              disabled={cargandoIA}
+              className="w-100 mb-4 fw-bold"
+            >
+              {cargandoIA ? (
+                <><Spinner as="span" animation="border" size="sm" className="me-2" /> Analizando mercado en tiempo real...</>
+              ) : "✨ Descubrir qué tecnologías me faltan"}
+            </Button>
+
+            {errorIA && <Alert variant="danger">{errorIA}</Alert>}
+
+            {brujulaData && (
+              <div className="bg-light p-4 rounded border">
+                {brujulaData.top_faltante && brujulaData.top_faltante.length > 0 ? (
+                  <>
+                    <h6 className="fw-bold text-primary mb-3">Tecnologías más demandadas que aún no registras:</h6>
+                    <ListGroup horizontal className="mb-4 justify-content-center">
+                      {brujulaData.top_faltante.map((tech, index) => (
+                        <ListGroup.Item key={index} className="bg-white fw-bold shadow-sm rounded mx-1 text-uppercase">
+                          {tech}
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  </>
+                ) : null}
+                
+                <h6 className="fw-bold text-dark">Consejo de tu Asesor IA:</h6>
+                <p className="fst-italic text-secondary mb-0">"{brujulaData.mensaje}"</p>
+              </div>
+            )}
+          </Card>
         </Col>
 
+        {/* COLUMNA DERECHA: RESUMEN DE PERFIL */}
         <Col xs={12} lg={4}>
           <Card className="shadow-sm border-0 p-4 bg-light text-center h-100">
             <div className="bg-primary rounded-circle mx-auto d-flex align-items-center justify-content-center text-white fw-bold mb-3 shadow" style={{ width: "90px", height: "90px", fontSize: "2.5rem" }}>
@@ -171,7 +272,10 @@ export const Perfil = ({ estudiante }) => {
                 {estudiante.perfil_verificado ? "✓ Cuenta Verificada" : "Pendiente de Verificación"}
               </Badge>
               {estudiante.cv_url && (
-                <Badge bg="info" className="p-2 w-100">CV Cargado en Sistema</Badge>
+                <Badge bg="info" className="p-2 mb-2 w-100">CV Cargado en Sistema</Badge>
+              )}
+              {(estudiante.habilidades && estudiante.intereses_laborales) && (
+                <Badge bg="primary" className="p-2 w-100">🤖 Perfil IA Optimizado</Badge>
               )}
             </div>
           </Card>

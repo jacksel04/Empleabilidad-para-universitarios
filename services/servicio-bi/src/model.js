@@ -73,3 +73,21 @@ export const obtenerEstadosEmpresas = async (supabase) => {
     .from("empresas")
     .select("estado_verificacion");
 };
+
+// Trae solo los requisitos de las ofertas de una carrera
+export const obtenerRequisitosPorCarrera = async (supabase, carrera) => {
+  return await supabase
+    .from("ofertas")
+    .select("requisitos")
+    .eq("estado", "Activo")
+    .eq("carrera", carrera); // ¡Requiere que agregues esta columna en Supabase!
+};
+
+// Trae la info base de las ofertas para cruzar datos
+export const obtenerOfertasParaMatch = async (supabase, carrera) => {
+  return await supabase
+    .from("ofertas")
+    .select("id, titulo_puesto, empresa_nombre, requisitos")
+    .eq("estado", "Activo")
+    .eq("carrera", carrera); // ¡Requiere que agregues esta columna en Supabase!
+};

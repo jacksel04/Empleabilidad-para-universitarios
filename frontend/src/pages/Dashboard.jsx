@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Badge, Alert, Spinner } from "react-bootstrap";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -11,7 +11,10 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
   });
 
   const [ultimasOfertas, setUltimasOfertas] = useState([]);
-
+  // --- ESTADOS PARA LA IA (BRÚJULA DE MERCADO) ---
+  const [loadingIA, setLoadingIA] = useState(false);
+  const [resultadoIA, setResultadoIA] = useState(null);
+  const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
   const esEmpresa = estudiante?.rol === "empresa";
 
   useEffect(() => {
@@ -55,6 +58,45 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
       }
     } catch (error) {
       console.error("Error al cargar resumen del dashboard:", error);
+    }
+  };
+
+  // --- NUEVO: FUNCIÓN PARA CONSULTAR LA BRECHA TECNOLÓGICA CON IA ---
+  const consultarBrujula = async () => {
+    if (!estudiante || !estudiante.carrera) {
+      setNotificacion({ 
+        texto: "Debes tener tu carrera registrada en la pestaña 'Perfil' para usar la Brújula de Mercado.", 
+        tipo: "warning" 
+      });
+      return;
+    }
+
+    setLoadingIA(true);
+    setResultadoIA(null);
+    setNotificacion({ texto: "", tipo: "" });
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ia/brujula`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carrera: estudiante.carrera,
+          habilidades_estudiante: estudiante.habilidades || "" // Si no tiene, envía vacío
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResultadoIA(data);
+      } else {
+        throw new Error(data.error || "Error al procesar el análisis de mercado.");
+      }
+    } catch (error) {
+      console.error("Error en Brújula IA:", error);
+      setNotificacion({ texto: "Hubo un problema al conectar con el motor de IA.", tipo: "danger" });
+    } finally {
+      setLoadingIA(false);
     }
   };
 
@@ -152,7 +194,13 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
           y el estado de la plataforma.
         </p>
       </div>
-
+      
+      {/* --- NUEVO: CONTENEDOR DE ALERTAS DE IA --- */}
+      {notificacion.texto && (
+        <Alert variant={notificacion.tipo} dismissible onClose={() => setNotificacion({ texto: "", tipo: "" })}>
+          {notificacion.texto}
+        </Alert>
+      )}
       {/* FILA DE ESTADÍSTICAS */}
       <Row className="mb-4 g-3">
         <Col xs={12} md={4}>
@@ -214,6 +262,65 @@ export const Dashboard = ({ estudiante, alCambiarVista }) => {
               <small className="text-white-50">
                 Procesadas por el microservicio
               </small>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+      
+      {/* --- NUEVO: SECCIÓN BRÚJULA DE MERCADO (IDEA 1) --- */}
+      <Row className="mb-4">
+        <Col xs={12}>
+          <Card className="shadow-sm border-0" style={{ backgroundColor: "#f8f9fa", borderLeft: "4px solid #0d6efd !important" }}>
+            <Card.Body className="d-flex flex-column p-4">
+              <div className="d-flex align-items-center mb-3">
+                <span style={{ fontSize: "2rem", marginRight: "15px" }}>🧭</span>
+                <div>
+                  <h4 className="fw-bold text-primary m-0">Brújula de Mercado AI</h4>
+                  <p className="text-muted m-0 small">Descubre qué habilidades demanda actualmente el mercado para tu carrera.</p>
+                </div>
+              </div>
+              
+              <p className="text-secondary mb-4">
+                Nuestro motor de Inteligencia Artificial cruza tu perfil con las ofertas actuales de <strong>{estudiante?.carrera || "tu carrera"}</strong> para identificar tu brecha de habilidades.
+              </p>
+
+              <Button 
+                variant="primary" 
+                onClick={consultarBrujula} 
+                disabled={loadingIA}
+                className="align-self-start fw-bold px-4 py-2 shadow-sm"
+              >
+                {loadingIA ? (
+                  <><Spinner as="span" animation="border" size="sm" className="me-2" /> Analizando tendencias...</>
+                ) : (
+                  "Analizar mi perfil vs. Mercado"
+                )}
+              </Button>
+
+              {/* RENDERIZADO DE RESULTADOS DE LA IA */}
+              {resultadoIA && (
+                <div className="mt-4 p-4 bg-white rounded shadow-sm border">
+                  {resultadoIA.top_faltante && resultadoIA.top_faltante.length > 0 ? (
+                    <>
+                      <h6 className="fw-bold text-danger mb-3">🚨 Te sugerimos aprender las siguientes tecnologías/habilidades:</h6>
+                      <div className="mb-4">
+                        {resultadoIA.top_faltante.map((tech, i) => (
+                          <Badge bg="danger" className="me-2 p-2 mb-2" style={{ fontSize: "0.9rem" }} key={i}>
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <h6 className="fw-bold text-success mb-3">✅ ¡Excelente! Tus habilidades están completamente alineadas con lo que piden las empresas hoy.</h6>
+                  )}
+
+                  <hr />
+                  <p className="fst-italic text-dark mb-0 mt-3" style={{ fontSize: "1rem", lineHeight: "1.6" }}>
+                    🤖 <strong>Consejo del Asesor IA:</strong> "{resultadoIA.mensaje}"
+                  </p>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
