@@ -1,8 +1,12 @@
 import { Groq } from 'groq-sdk';
 import natural from 'natural';
-import { supabase } from './supabase.js';
 
+// Configuración de clientes y variables de entorno
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// En un entorno de microservicios, la IA le pide los datos al servicio correspondiente.
+// Asegúrate de definir esta variable en tu archivo .env (ej. http://localhost:3002/api/bi)
+const BI_SERVICE_URL = process.env.BI_SERVICE_URL || 'http://localhost:3002/api/bi';
 
 export const obtenerBrujulaMercado = async (req, res) => {
   try {
@@ -12,15 +16,15 @@ export const obtenerBrujulaMercado = async (req, res) => {
       return res.status(400).json({ error: "Falta la carrera del estudiante" });
     }
 
-    // 1. EXTRAER DATOS (Filtrado Duro por Carrera)
-    // Obtenemos solo los requisitos de las ofertas activas para esta carrera
-    const { data: ofertas, error } = await supabase
-      .from('ofertas')
-      .select('requisitos')
-      .eq('estado', 'Activo')
-      .eq('carrera', carrera);
-
-    if (error) throw error;
+    // 1. EXTRAER DATOS (Llamada HTTP al Servicio BI)
+    // El microservicio IA no toca la BD, le pide los datos procesados al Servicio BI.
+    const response = await fetch(`${BI_SERVICE_URL}/ofertas/requisitos?carrera=${encodeURIComponent(carrera)}`);
+    
+    if (!response.ok) {
+      throw new Error("No se pudo obtener la información del Servicio BI.");
+    }
+    
+    const ofertas = await response.json();
 
     if (!ofertas || ofertas.length === 0) {
       return res.status(200).json({ 
@@ -32,21 +36,17 @@ export const obtenerBrujulaMercado = async (req, res) => {
     const TfIdf = natural.TfIdf;
     const tfidf = new TfIdf();
     
-    // Añadimos cada oferta como un documento matemático
     ofertas.forEach(oferta => {
       if (oferta.requisitos) {
-        // Limpiamos un poco el texto de caracteres especiales
         const textoLimpio = oferta.requisitos.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
         tfidf.addDocument(textoLimpio);
       }
     });
 
-    // Calculamos el peso total de las palabras en todo el corpus (todas las ofertas)
     const pesosPalabras = {};
     ofertas.forEach((_, index) => {
       const terminos = tfidf.listTerms(index);
       terminos.forEach(t => {
-        // Ignoramos palabras genéricas (stop-words básicos en español) o muy cortas
         const stopWords = ['con', 'para', 'los', 'las', 'una', 'uno', 'del', 'que', 'experiencia', 'conocimiento', 'años', 'manejo'];
         if (t.term.length > 2 && !stopWords.includes(t.term)) {
           pesosPalabras[t.term] = (pesosPalabras[t.term] || 0) + t.tfidf;
@@ -54,28 +54,25 @@ export const obtenerBrujulaMercado = async (req, res) => {
       });
     });
 
-    // Ordenamos las tecnologías de mayor a menor peso
     const topTecnologiasMercado = Object.entries(pesosPalabras)
       .sort((a, b) => b[1] - a[1])
       .map(entry => entry[0])
-      .slice(0, 10); // Tomamos el Top 10 matemático
+      .slice(0, 10);
 
-    // 3. CALCULAR LA BRECHA (Lo que el mercado pide vs lo que el alumno tiene)
+    // 3. CALCULAR LA BRECHA
     const habilidadesAlumnoArray = habilidades_estudiante ? habilidades_estudiante.toLowerCase().split(',').map(s => s.trim()) : [];
     
-    // Filtramos las tecnologías que el alumno ya domina
     const brechaTecnologica = topTecnologiasMercado.filter(tech => 
       !habilidadesAlumnoArray.some(hab => hab.includes(tech))
-    ).slice(0, 3); // Nos quedamos con las 3 faltantes más importantes
+    ).slice(0, 3);
 
-    // Si el alumno ya sabe todo lo que pide el mercado:
     if (brechaTecnologica.length === 0) {
       return res.status(200).json({ 
         mensaje: "¡Felicidades! Tu perfil cubre las tecnologías más demandadas actualmente en tu carrera." 
       });
     }
 
-    // 4. IA GENERATIVA (Capa de Comunicación final con Groq)
+    // 4. IA GENERATIVA (Groq)
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         {
@@ -103,5 +100,145 @@ export const obtenerBrujulaMercado = async (req, res) => {
   } catch (error) {
     console.error("[Error en Brújula IA]:", error);
     return res.status(500).json({ error: "Error interno al procesar el análisis de mercado." });
+  }
+};
+
+// Función auxiliar matemática pura: Similitud del Coseno en JavaScript
+const calcularSimilitudCoseno = (texto1, texto2) => {
+  const tokenize = (text) => text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").match(/\w+/g) || [];
+  const tokens1 = tokenize(texto1);
+  const tokens2 = tokenize(texto2);
+  
+  const vocabulario = Array.from(new Set([...tokens1, ...tokens2]));
+  
+  const vector1 = vocabulario.map(t => tokens1.filter(w => w === t).length);
+  const vector2 = vocabulario.map(t => tokens2.filter(w => w === t).length);
+  
+  const productoPunto = vector1.reduce((sum, val, i) => sum + val * vector2[i], 0);
+  const magnitud1 = Math.sqrt(vector1.reduce((sum, val) => sum + (val * val), 0));
+  const magnitud2 = Math.sqrt(vector2.reduce((sum, val) => sum + (val * val), 0));
+  
+  if (magnitud1 === 0 || magnitud2 === 0) return 0;
+  return productoPunto / (magnitud1 * magnitud2);
+};
+
+export const calcularMatchOfertas = async (req, res) => {
+  try {
+    const { carrera, habilidades_estudiante, intereses_estudiante } = req.body;
+
+    if (!carrera) return res.status(400).json({ error: "Carrera es requerida." });
+
+    // 1. FILTRO DURO (Llamada HTTP al Servicio BI)
+    const response = await fetch(`${BI_SERVICE_URL}/ofertas/match?carrera=${encodeURIComponent(carrera)}`);
+    
+    if (!response.ok) {
+      throw new Error("No se pudo obtener las ofertas del Servicio BI.");
+    }
+    
+    const ofertas = await response.json();
+
+    if (!ofertas || ofertas.length === 0) {
+      return res.status(200).json({ resultados: [] });
+    }
+
+    // 2. MOTOR MATEMÁTICO: Calcular Match % para cada oferta
+    const textoPerfilAlumno = `${habilidades_estudiante || ''} ${intereses_estudiante || ''}`;
+    
+    let ofertasConMatch = ofertas.map(oferta => {
+      const textoOferta = `${oferta.titulo_puesto} ${oferta.requisitos || ''}`;
+      const similitud = calcularSimilitudCoseno(textoPerfilAlumno, textoOferta);
+      const porcentaje = Math.round(similitud * 100);
+      
+      return { ...oferta, match: porcentaje };
+    });
+
+    ofertasConMatch = ofertasConMatch
+      .filter(o => o.match > 20)
+      .sort((a, b) => b.match - a.match)
+      .slice(0, 5);
+
+    if (ofertasConMatch.length === 0) {
+       return res.status(200).json({ resultados: [] });
+    }
+
+    // 3. IA GENERATIVA (Groq)
+    const promptDatos = ofertasConMatch.map(o => ({
+      id: o.id,
+      puesto: o.titulo_puesto,
+      requisitos: o.requisitos
+    }));
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "Eres un analista de reclutamiento. Recibirás un perfil y un arreglo de ofertas. Devuelve ESTRICTAMENTE un JSON con un arreglo de objetos. Cada objeto debe tener 'id' (el id de la oferta) y 'justificacion' (1 oración corta y profesional de por qué el perfil encaja con esa oferta). No escribas nada de texto fuera del JSON."
+        },
+        {
+          role: "user",
+          content: `Perfil: [Habilidades: ${habilidades_estudiante}, Intereses: ${intereses_estudiante}]. Ofertas: ${JSON.stringify(promptDatos)}`
+        }
+      ],
+      model: "llama3-8b-8192",
+      response_format: { type: "json_object" }
+    });
+
+    let justificacionesIA = [];
+    try {
+      const iaRespuestaParsed = JSON.parse(chatCompletion.choices[0].message.content);
+      justificacionesIA = iaRespuestaParsed.justificaciones || Object.values(iaRespuestaParsed)[0] || [];
+    } catch (parseError) {
+      console.log("Error parseando JSON de la IA, devolviendo vacio", parseError);
+    }
+
+    // 4. UNIR MATEMÁTICA CON JUSTIFICACIÓN Y ENVIAR
+    const resultadosFinales = ofertasConMatch.map(oferta => {
+      const matchIA = justificacionesIA.find(j => j.id === oferta.id);
+      return {
+        id_oferta: oferta.id,
+        titulo: oferta.titulo_puesto,
+        empresa: oferta.empresa_nombre,
+        match_porcentaje: oferta.match,
+        justificacion: matchIA ? matchIA.justificacion : "Afinidad calculada según las tecnologías de tu perfil."
+      };
+    });
+
+    return res.status(200).json({ resultados: resultadosFinales });
+
+  } catch (error) {
+    console.error("[Error en Matchmaker]:", error);
+    return res.status(500).json({ error: "Error procesando el match semántico." });
+  }
+};
+
+export const calcularMatchPostulantes = async (req, res) => {
+  try {
+    const { empresa_id, postulantes } = req.body;
+
+    if (!postulantes || postulantes.length === 0) {
+      return res.status(400).json({ error: "No hay postulantes para analizar." });
+    }
+
+    // 1. MOTOR MATEMÁTICO: Evaluamos cada postulante contra la oferta a la que aplicó
+    // Aquí no hacemos fetch a BD, porque el microservicio principal (o frontend)
+    // ya nos envía toda la información ("postulantes") necesaria en el req.body.
+    let postulantesConMatch = postulantes.map(post => {
+      const textoOferta = `${post.ofertas?.titulo_puesto || ''} ${post.ofertas?.requisitos || ''}`;
+      const textoCandidato = `${post.estudiante_habilidades || ''} ${post.estudiante_intereses || ''}`;
+      
+      const similitud = calcularSimilitudCoseno(textoCandidato, textoOferta);
+      const porcentaje = Math.round(similitud * 100);
+      
+      return { ...post, match_ia: porcentaje };
+    });
+
+    // 2. ORDENAR LOS MEJORES
+    postulantesConMatch.sort((a, b) => b.match_ia - a.match_ia);
+
+    return res.status(200).json(postulantesConMatch);
+
+  } catch (error) {
+    console.error("[Error en Matchmaker Empresa]:", error);
+    return res.status(500).json({ error: "Error procesando el match de postulantes." });
   }
 };
