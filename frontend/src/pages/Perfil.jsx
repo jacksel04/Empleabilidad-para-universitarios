@@ -91,7 +91,7 @@ export const Perfil = ({ estudiante, onActualizarUsuario }) => {
       setCargandoIA(true);
       setErrorIA("");
       
-      const response = await fetch(`${API_BASE_URL}/api/ia/brujula`, {
+      const response = await fetch(`https://servicio-ia-empleabilidad.onrender.com/api/ia/brujula`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
