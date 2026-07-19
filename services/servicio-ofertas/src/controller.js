@@ -1,6 +1,6 @@
 import express from 'express';
 import 'dotenv/config';
-import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta } from './model.js';
+import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta, obtenerOfertasParaIA } from './model.js';
 import { supabase } from './supabase.js';
 
 const app = express();
@@ -53,6 +53,22 @@ app.delete('/api/ofertas', async (req, res) => {
     
   if (error) return res.status(500).json({ error: error.message });
   return res.status(200).json({ mensaje: "Oferta eliminada tras cierre del acuerdo" });
+});
+
+// Ruta que alimenta la Brújula de Mercado
+app.get('/api/ofertas/requisitos', async (req, res) => {
+  const { carrera } = req.query;
+  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json(data || []);
+});
+
+// Ruta que alimenta el Matchmaker
+app.get('/api/ofertas/match', async (req, res) => {
+  const { carrera } = req.query;
+  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json(data || []);
 });
 
 app.listen(PORT, () => {
