@@ -3,7 +3,7 @@ import { Container, Card, Row, Col, Badge, Button, Form, Alert, Spinner, ListGro
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export const Perfil = ({ estudiante }) => {
+export const Perfil = ({ estudiante, onActualizarUsuario }) => {
   // Estados para los campos editables
   const [telefono, setTelefono] = useState(estudiante.telefono || "");
   const [ciclo, setCiclo] = useState(estudiante.ciclo || "");
@@ -60,7 +60,16 @@ export const Perfil = ({ estudiante }) => {
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.error || "Error al actualizar el perfil.");
-
+      if (onActualizarUsuario) {
+        onActualizarUsuario({
+          ...estudiante,
+          telefono: telefono,
+          ciclo: ciclo,
+          carrera: carrera,
+          habilidades: habilidades,
+          intereses_laborales: interesesLaborales
+        });
+      }
       setNotificacion({ texto: "¡Perfil y CV actualizados exitosamente!", tipo: "success" });
       setArchivoCV(null); 
       

@@ -467,6 +467,7 @@ function App() {
           <Perfil
             estudiante={estudiante}
             alCambiarVista={navegarA}
+            onActualizarUsuario={actualizarUsuarioActual}
           />
         );
 
