@@ -140,18 +140,32 @@ export const calcularMatchOfertas = async (req, res) => {
   try {
     const { carrera, habilidades_estudiante, intereses_estudiante } = req.body;
 
+    // 📍 PUNTO 1: Saber qué datos llegan desde el frontend
+    console.log("\n[IA-DEBUG 1] --- NUEVA PETICION DE MATCH ---");
+    console.log(`[IA-DEBUG 1] Carrera: "${carrera}"`);
+    console.log(`[IA-DEBUG 1] Habilidades: "${habilidades_estudiante}"`);
+    console.log(`[IA-DEBUG 1] Intereses: "${intereses_estudiante}"`);
+
     if (!carrera) return res.status(400).json({ error: "Carrera es requerida." });
 
     // 1. FILTRO DURO (Llamada HTTP al Servicio BI)
-    const response = await fetch(`${BI_SERVICE_URL}/ofertas/match?carrera=${encodeURIComponent(carrera)}`);
+    const urlConsulta = `${BI_SERVICE_URL}/ofertas/match?carrera=${encodeURIComponent(carrera)}`;
+    console.log(`[IA-DEBUG 2] Consultando BI en: ${urlConsulta}`);
+    
+    const response = await fetch(urlConsulta);
     
     if (!response.ok) {
+      console.error(`[IA-DEBUG 2] ERROR HTTP DE BI: ${response.status}`);
       throw new Error("No se pudo obtener las ofertas del Servicio BI.");
     }
     
     const ofertas = await response.json();
 
+    // 📍 PUNTO 3: Saber cuántas ofertas devolvió la Base de Datos para esa carrera
+    console.log(`[IA-DEBUG 3] Ofertas encontradas en BD para esa carrera: ${ofertas ? ofertas.length : 0}`);
+
     if (!ofertas || ofertas.length === 0) {
+      console.log("[IA-DEBUG 3] Terminando temprano: El Servicio BI no encontró ninguna oferta.");
       return res.status(200).json({ resultados: [] });
     }
 
@@ -166,16 +180,27 @@ export const calcularMatchOfertas = async (req, res) => {
       return { ...oferta, match: porcentaje };
     });
 
+    // 📍 PUNTO 4: Espiar los puntajes antes de que el filtro los elimine
+    console.log(`[IA-DEBUG 4] Puntajes calculados antes de filtrar (>20%):`);
+    ofertasConMatch.forEach(o => {
+      console.log(`   - ID: ${o.id} | Puesto: ${o.titulo_puesto} | MATCH: ${o.match}%`);
+    });
+
     ofertasConMatch = ofertasConMatch
       .filter(o => o.match > 20)
       .sort((a, b) => b.match - a.match)
       .slice(0, 5);
 
+    // 📍 PUNTO 5: Saber cuántas ofertas superaron la prueba del 20%
+    console.log(`[IA-DEBUG 5] Ofertas que superaron el 20%: ${ofertasConMatch.length}`);
+
     if (ofertasConMatch.length === 0) {
+       console.log("[IA-DEBUG 5] Terminando temprano: Ninguna oferta alcanzó el 20% de match.");
        return res.status(200).json({ resultados: [] });
     }
 
     // 3. IA GENERATIVA (Groq)
+    console.log(`[IA-DEBUG 6] Pidiendo justificaciones a Groq para ${ofertasConMatch.length} ofertas...`);
     const promptDatos = ofertasConMatch.map(o => ({
       id: o.id,
       puesto: o.titulo_puesto,
@@ -201,8 +226,9 @@ export const calcularMatchOfertas = async (req, res) => {
     try {
       const iaRespuestaParsed = JSON.parse(chatCompletion.choices[0].message.content);
       justificacionesIA = iaRespuestaParsed.justificaciones || Object.values(iaRespuestaParsed)[0] || [];
+      console.log(`[IA-DEBUG 7] Groq respondió exitosamente.`);
     } catch (parseError) {
-      console.log("Error parseando JSON de la IA, devolviendo vacio", parseError);
+      console.log("[IA-DEBUG 7] Error parseando JSON de la IA, devolviendo vacio", parseError);
     }
 
     // 4. UNIR MATEMÁTICA CON JUSTIFICACIÓN Y ENVIAR
@@ -217,6 +243,7 @@ export const calcularMatchOfertas = async (req, res) => {
       };
     });
 
+    console.log(`[IA-DEBUG 8] === FIN DEL PROCESO === Enviando ${resultadosFinales.length} ofertas al frontend.\n`);
     return res.status(200).json({ resultados: resultadosFinales });
 
   } catch (error) {
