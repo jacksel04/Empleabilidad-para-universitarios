@@ -15,12 +15,16 @@ export const eliminarOferta = async (supabase, id) => {
 };
 
 export const obtenerOfertasParaIA = async (supabase, carrera) => {
-  // Filtramos solo las ofertas activas
-  let query = supabase.from('ofertas').select('id, titulo_puesto, empresa_nombre, requisitos, descripcion').eq('estado', 'Activa');
+  // 1. Corregimos 'Activa' a 'Activo' (como está en tu BD)
+  // 2. Agregamos la columna 'carrera' al select por si acaso
+  let query = supabase
+    .from('ofertas')
+    .select('id, titulo_puesto, empresa_nombre, requisitos, descripcion, carrera')
+    .eq('estado', 'Activo'); 
   
-  // Si nos envían una carrera, buscamos coincidencias
+  // Si nos envían una carrera, filtramos directamente por la columna 'carrera'
   if (carrera) {
-    query = query.or(`titulo_puesto.ilike.%${carrera}%,descripcion.ilike.%${carrera}%,requisitos.ilike.%${carrera}%`);
+    query = query.eq('carrera', carrera);
   }
   
   return await query;
