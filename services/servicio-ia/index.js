@@ -1,8 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { conectarRabbitMQ } from './rabbitmq.js';
-// Importamos los 3 controladores (sin duplicar)
+
+// 👇 AQUÍ ESTÁ LA CORRECCIÓN: Apuntar a la carpeta src/
+import { conectarRabbitMQ } from './src/rabbitmq.js';
+
+// Importamos los 3 controladores 
 import { 
   obtenerBrujulaMercado, 
   calcularMatchOfertas,
