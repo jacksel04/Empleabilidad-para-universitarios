@@ -33,6 +33,17 @@ const BI_SERVICE_URL =
 
 const IA_SERVICE_URL =
   process.env.IA_SERVICE_URL || 'https://servicio-ia-empleabilidad.onrender.com';
+
+/*
+const NOTIFICACIONES_SERVICE_URL =
+  process.env.NOTIFICACIONES_SERVICE_URL || 'https://servicio-notificaciones-empleabilidad.onrender.com';
+
+
+// --- MICROSERVICIO DE NOTIFICACIONES ---
+app.use('/api/notificaciones', proxy(NOTIFICACIONES_SERVICE_URL, proxyOptions));
+
+*/
+
 // --- MICROSERVICIO DE USUARIOS ---
 app.use('/api/estudiantes', proxy(USUARIOS_SERVICE_URL, proxyOptions));
 app.use('/api/usuarios', proxy(USUARIOS_SERVICE_URL, proxyOptions));
