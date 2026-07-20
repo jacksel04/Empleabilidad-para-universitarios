@@ -1,6 +1,6 @@
 import { Groq } from 'groq-sdk';
 import natural from 'natural';
-
+import { publicarEvento } from './rabbitmq.js';
 // Configuración de clientes y variables de entorno
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -23,7 +23,6 @@ export const obtenerBrujulaMercado = async (req, res) => {
     if (!response.ok) {
       throw new Error("No se pudo obtener la información del Servicio BI.");
     }
-    
     const ofertas = await response.json();
 
     if (!ofertas || ofertas.length === 0) {
@@ -90,6 +89,13 @@ export const obtenerBrujulaMercado = async (req, res) => {
     });
 
     const recomendacionIA = chatCompletion.choices[0].message.content;
+    
+    // Publicamos el evento en RabbitMQ avisando al sistema que se hizo un análisis
+    publicarEvento('ia.brujula.generada', {
+      carrera: carrera,
+      tecnologias_faltantes: brechaTecnologica,
+      fecha: new Date().toISOString()
+    });
 
     // 5. RESPUESTA FINAL AL FRONTEND
     return res.status(200).json({ 
@@ -103,9 +109,17 @@ export const obtenerBrujulaMercado = async (req, res) => {
   }
 };
 
-// Función auxiliar matemática pura: Similitud del Coseno en JavaScript
+// Función auxiliar matemática pura: Similitud del Coseno Mejorada
 const calcularSimilitudCoseno = (texto1, texto2) => {
-  const tokenize = (text) => text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").match(/\w+/g) || [];
+  const tokenize = (text) => {
+    // 1. Regex mejorado para incluir letras con tildes y ñ
+    const palabras = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ").match(/[a-záéíóúñü\d]+/g) || [];
+    
+    // 2. Filtro de palabras basura (Stop Words) y palabras muy cortas
+    const stopWords = ['con', 'para', 'los', 'las', 'una', 'uno', 'del', 'que', 'el', 'la', 'en', 'de', 'y', 'a', 'o', 'su', 'se', 'al', 'es', 'por'];
+    return palabras.filter(w => w.length > 2 && !stopWords.includes(w));
+  };
+
   const tokens1 = tokenize(texto1);
   const tokens2 = tokenize(texto2);
   

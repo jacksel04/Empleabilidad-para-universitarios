@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-
+import { conectarRabbitMQ } from './rabbitmq.js';
 // Importamos los 3 controladores (sin duplicar)
 import { 
   obtenerBrujulaMercado, 
@@ -26,6 +26,8 @@ app.post('/api/ia/match-ofertas', calcularMatchOfertas);
 // 3. Matchmaker Semántico (Para que la empresa filtre postulantes)
 app.post('/api/ia/match-postulantes', calcularMatchPostulantes);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`[Servicio IA] Escuchando en el puerto ${PORT}`);
+  // Iniciamos la conexión a RabbitMQ
+  await conectarRabbitMQ();
 });
