@@ -8,6 +8,7 @@ import {
   obtenerPostulacionesPorEstudiante 
 } from './model.js';
 import { supabase } from './supabase.js';
+import { conectarRabbitMQ, publicarEvento } from './rabbitmq.js';
 
 const app = express();
 app.use(express.json());
@@ -52,7 +53,15 @@ app.post('/api/postular', async (req, res) => {
     if (errorUpdate) {
       return res.status(500).json({ error: "Error en transacción (Paso B): " + errorUpdate.message });
     }
-
+    
+    publicarEvento('postulacion.creada', {
+      estudiante_id,
+      oferta_id,
+      titulo_puesto: oferta.titulo_puesto,   // agregar al select del model
+      empresa_nombre: oferta.empresa_nombre, // agregar al select del model
+      timestamp: new Date().toISOString()
+    });
+    
     return res.status(201).json({ 
       mensaje: "Transacción completada: Postulación registrada y oferta actualizada a 'En proceso de selección'" 
     });
@@ -90,3 +99,12 @@ app.listen(PORT, () => {
 app.listen(PORT, () => {
   console.log(`[Servicio Postulaciones] Escuchando en el puerto ${PORT}`);
 });
+
+async function iniciarServicio() {
+  await conectarRabbitMQ(); // Primero conectar RabbitMQ
+  app.listen(PORT, () => {
+    console.log(`[Servicio Postulaciones] Escuchando en el puerto ${PORT}`);
+  });
+}
+
+iniciarServicio();

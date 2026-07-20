@@ -1,5 +1,7 @@
 export const obtenerEstadoOferta = async (supabase, id) => {
-  return await supabase.from('ofertas').select('estado').eq('id', id).single();
+  return await supabase.from('ofertas')
+    .select('estado, titulo_puesto, empresa_nombre')
+    .eq('id', id).single();
 };
 
 export const verificarPostulacionExistente = async (supabase, estudiante_id, oferta_id) => {

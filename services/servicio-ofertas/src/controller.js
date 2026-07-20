@@ -2,6 +2,7 @@ import express from 'express';
 import 'dotenv/config';
 import { obtenerTodasOfertas, crearOferta, actualizarOferta, eliminarOferta, obtenerOfertasParaIA } from './model.js';
 import { supabase } from './supabase.js';
+import { conectarRabbitMQ, publicarEvento } from './rabbitmq.js';
 
 const app = express();
 app.use(express.json());
@@ -11,6 +12,22 @@ app.get('/api/ofertas', async (req, res) => {
   const { data, error } = await obtenerTodasOfertas(supabase);
   if (error) return res.status(500).json({ error: error.message });
   return res.status(200).json(data);
+});
+
+// Ruta que alimenta la Brújula de Mercado
+app.get('/api/ofertas/requisitos', async (req, res) => {
+  const { carrera } = req.query;
+  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json(data || []);
+});
+
+// Ruta que alimenta el Matchmaker
+app.get('/api/ofertas/match', async (req, res) => {
+  const { carrera } = req.query;
+  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json(data || []);
 });
 
 app.post('/api/ofertas', async (req, res) => {
@@ -34,9 +51,18 @@ app.post('/api/ofertas', async (req, res) => {
   });
     
   if (error) return res.status(500).json({ error: error.message });
+  publicarEvento('oferta.creada', {
+    oferta_id: data[0]?.id,
+    titulo_puesto,
+    empresa_nombre,
+    modalidad,
+    timestamp: new Date().toISOString()
+  });
+  
   return res.status(201).json({ mensaje: "Oferta creada con éxito bajo los estándares de la plataforma", data });
 });
 
+  
 app.put('/api/ofertas', async (req, res) => {
   const { id, titulo_puesto, empresa_nombre, descripcion, modalidad, salario, requisitos, estado } = req.body;
   const { data, error } = await actualizarOferta(supabase, id, { 
@@ -55,21 +81,16 @@ app.delete('/api/ofertas', async (req, res) => {
   return res.status(200).json({ mensaje: "Oferta eliminada tras cierre del acuerdo" });
 });
 
-// Ruta que alimenta la Brújula de Mercado
-app.get('/api/ofertas/requisitos', async (req, res) => {
-  const { carrera } = req.query;
-  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
+app.delete('/api/ofertas', async (req, res) => {
+  const { id } = req.body;
+  const { error } = await eliminarOferta(supabase, id);
+    
   if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json(data || []);
+  return res.status(200).json({ mensaje: "Oferta eliminada tras cierre del acuerdo" });
 });
+await conectarRabbitMQ();
 
-// Ruta que alimenta el Matchmaker
-app.get('/api/ofertas/match', async (req, res) => {
-  const { carrera } = req.query;
-  const { data, error } = await obtenerOfertasParaIA(supabase, carrera);
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json(data || []);
-});
+
 
 app.listen(PORT, () => {
   console.log(`[Servicio Ofertas] Escuchando en el puerto ${PORT}`);
