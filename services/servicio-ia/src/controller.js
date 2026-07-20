@@ -218,7 +218,7 @@ export const calcularMatchOfertas = async (req, res) => {
           content: `Perfil: [Habilidades: ${habilidades_estudiante}, Intereses: ${intereses_estudiante}]. Ofertas: ${JSON.stringify(promptDatos)}`
         }
       ],
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
