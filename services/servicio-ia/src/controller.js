@@ -85,7 +85,7 @@ export const obtenerBrujulaMercado = async (req, res) => {
           Redacta un consejo de 3 líneas indicándole que estas tecnologías son la clave para ser contratado en las ofertas actuales de su carrera en San Marcos.`
         }
       ],
-      model: "llama3-8b-8192",
+      model: "openai/gpt-oss-120b",
     });
 
     const recomendacionIA = chatCompletion.choices[0].message.content;
@@ -218,7 +218,7 @@ export const calcularMatchOfertas = async (req, res) => {
           content: `Perfil: [Habilidades: ${habilidades_estudiante}, Intereses: ${intereses_estudiante}]. Ofertas: ${JSON.stringify(promptDatos)}`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-120b",
       response_format: { type: "json_object" }
     });
 
