@@ -224,9 +224,21 @@ export const calcularMatchOfertas = async (req, res) => {
 
     let justificacionesIA = [];
     try {
-      const iaRespuestaParsed = JSON.parse(chatCompletion.choices[0].message.content);
-      justificacionesIA = iaRespuestaParsed.justificaciones || Object.values(iaRespuestaParsed)[0] || [];
-      console.log(`[IA-DEBUG 7] Groq respondió exitosamente.`);
+      const contenidoRaw = chatCompletion.choices?.[0]?.message?.content || '{}';
+      const iaRespuestaParsed = JSON.parse(contenidoRaw);
+
+      // CORRECCIÓN CRÍTICA: Buscar de forma segura un Arreglo en la respuesta
+      if (Array.isArray(iaRespuestaParsed.justificaciones)) {
+        justificacionesIA = iaRespuestaParsed.justificaciones;
+      } else if (Array.isArray(iaRespuestaParsed)) {
+        justificacionesIA = iaRespuestaParsed;
+      } else {
+        // Busca si alguna de las propiedades dentro del objeto devuelto es un Arreglo
+        const posibleArreglo = Object.values(iaRespuestaParsed).find(v => Array.isArray(v));
+        justificacionesIA = posibleArreglo || [];
+      }
+
+      console.log(`[IA-DEBUG 7] Groq respondió exitosamente y se procesó el arreglo.`);
     } catch (parseError) {
       console.log("[IA-DEBUG 7] Error parseando JSON de la IA, devolviendo vacio", parseError);
     }
