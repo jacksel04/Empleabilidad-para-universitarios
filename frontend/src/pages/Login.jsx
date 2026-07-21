@@ -88,7 +88,6 @@ export const Login = ({
       setIsLoading(true);
 
       if (rol === "estudiante") {
-        // 1. Apuntamos a la nueva ruta usando POST y enviando solo las credenciales
         const response = await fetch(
           `${API_BASE_URL}/api/estudiantes/login`,
           {
@@ -103,11 +102,27 @@ export const Login = ({
           }
         );
 
-        const data = await response.json();
-
+        // Si la respuesta no es OK (ej. 404, 429, 401, 500)
         if (!response.ok) {
+          let mensajeError = "Error al intentar iniciar sesión.";
+          
+          if (response.status === 429) {
+            mensajeError = "Demasiados intentos. Por favor, espera unos minutos.";
+          } else if (response.status === 404) {
+            mensajeError = "Error de conexión: Verifica que el backend esté actualizado.";
+          } else {
+            // Intentamos extraer el error del JSON, si lo hay
+            try {
+              const errorData = await response.json();
+              mensajeError = errorData.error || mensajeError;
+            } catch (e) {
+              // Si falla al parsear (texto plano), mantenemos el mensaje genérico
+              console.error("No se pudo leer el error como JSON");
+            }
+          }
+
           setErrors({
-            correo: data.error || "El correo no se encuentra registrado o la contraseña es incorrecta.",
+            correo: mensajeError,
             password: ""
           });
 
@@ -115,8 +130,11 @@ export const Login = ({
           return;
         }
 
+        // Si la respuesta fue exitosa (200 OK), ahora sí parseamos tranquilamente
+        const data = await response.json();
+
         const usuarioConRol = {
-          ...estudianteEncontrado,
+          ...data.estudiante, 
           rol: "estudiante"
         };
 
@@ -126,9 +144,7 @@ export const Login = ({
         );
 
         setIsSuccess(true);
-
-        document.body.className =
-          "dashboard-body";
+        document.body.className = "dashboard-body";
 
         setTimeout(() => {
           onLoginSuccess(usuarioConRol);
