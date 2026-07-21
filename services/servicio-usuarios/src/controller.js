@@ -113,6 +113,46 @@ app.post("/api/estudiantes", async (req, res) => {
   }
 });
 
+// ===============================
+// NUEVA RUTA: Login de estudiante
+// ===============================
+app.post("/api/estudiantes/login", async (req, res) => {
+  try {
+    const correo = req.body.correo?.trim().toLowerCase();
+    const password = req.body.password?.trim();
+
+    if (!correo || !password) {
+      return res.status(400).json({
+        error: "El correo y la contraseña son obligatorios."
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("estudiantes")
+      .select("*")
+      .eq("correo", correo)
+      .eq("password", password)
+      .single();
+
+    if (error || !data) {
+      return res.status(401).json({
+        error: "El correo no está registrado o la contraseña es incorrecta."
+      });
+    }
+
+    const { password: passwordEstudiante, ...estudianteSinPassword } = data;
+
+    return res.status(200).json({
+      mensaje: "Inicio de sesión de estudiante exitoso",
+      estudiante: estudianteSinPassword
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: `Error interno del servidor: ${error.message}`
+    });
+  }
+});
+
 // Listar estudiantes.
 app.get("/api/estudiantes", async (req, res) => {
   try {

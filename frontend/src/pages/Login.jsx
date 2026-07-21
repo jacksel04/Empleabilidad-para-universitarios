@@ -88,32 +88,26 @@ export const Login = ({
       setIsLoading(true);
 
       if (rol === "estudiante") {
+        // 1. Apuntamos a la nueva ruta usando POST y enviando solo las credenciales
         const response = await fetch(
-          `${API_BASE_URL}/api/estudiantes`
+          `${API_BASE_URL}/api/estudiantes/login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              correo: correoLimpio,
+              password: passwordLimpia
+            })
+          }
         );
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error(
-            "No se pudo obtener la lista de estudiantes."
-          );
-        }
-
-        const estudiantes =
-          await response.json();
-
-        const estudianteEncontrado =
-          estudiantes.find(
-            (item) =>
-              item.correo?.toLowerCase() ===
-                correoLimpio &&
-              item.password ===
-                passwordLimpia
-          );
-
-        if (!estudianteEncontrado) {
           setErrors({
-            correo:
-              "El correo no se encuentra registrado o la contraseña es incorrecta.",
+            correo: data.error || "El correo no se encuentra registrado o la contraseña es incorrecta.",
             password: ""
           });
 
